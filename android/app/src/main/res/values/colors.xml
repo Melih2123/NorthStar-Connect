@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="northstar_bg">#071722</color>
+    <color name="northstar_cyan">#41E1F5</color>
+    <color name="northstar_white">#FFFFFF</color>
+    <color name="northstar_muted">#FFB0BEC5</color>
+</resources>

@@ -18,7 +18,7 @@ class MainActivity : Activity() {
         }
 
         val body = TextView(this).apply {
-            text = "Widget prototipi kuruldu.\\n\\nAna ekrana uzun bas → Widget'lar → NorthStar Connect.\\n\\nBu ilk sürüm yerel demo mesajını gösterir. Cihazlar arası senkronizasyon sonraki aşamada eklenecek."
+            text = "Widget prototipi kuruldu.\n\nAna ekrana uzun bas → Widget'lar → NorthStar Connect.\n\nBu ilk sürüm yerel demo mesajını gösterir. Cihazlar arası senkronizasyon sonraki aşamada eklenecek."
             textSize = 16f
             setTextColor(Color.WHITE)
             setPadding(0, 24, 0, 0)

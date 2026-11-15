@@ -1,50 +1,52 @@
-# NorthStar Connect Android
+# NorthStar Connect Android — v0.3 build-only
 
-Android widget prototype + GitHub Actions debug APK build.
+## Current milestone
+Build and install a basic Android app with a Jetpack Glance home-screen widget that displays the local demo text `Merhaba!`.
 
-## What is included
+## Build through GitHub Actions
 
-- Kotlin Android app shell
-- Jetpack Glance home-screen widget
-- Static local demo message (`Merhaba!`)
-- GitHub Actions workflow that builds a debug APK on pushes to `main`
-- APK uploaded as a 14-day Actions artifact
+1. Create an **empty** GitHub repository named `NorthStar-Connect` (do not add a README, license, or .gitignore there).
+2. Extract this ZIP. Open PowerShell in the extracted `NorthStar-Connect-Android-v0.3-build` folder.
+3. Run the commands below, replacing `YOUR_GITHUB_USERNAME` with your GitHub username:
 
-## Build with GitHub Actions
+```powershell
+git init -b main
+git add .
+git commit -m "Initial NorthStar Connect Android widget"
+git remote add origin https://github.com/YOUR_GITHUB_USERNAME/NorthStar-Connect.git
+git push -u origin main
+```
 
-1. Create a GitHub repository named `NorthStar-Connect`.
-2. Extract this project ZIP.
-3. Upload/push the contents so `.github/workflows/android-build.yml` is at the repository root.
-4. Push to the `main` branch, or open **Actions → NorthStar Connect Android APK → Run workflow**.
-5. Open the completed workflow run and download **NorthStar-Connect-debug-apk** under Artifacts.
-6. Transfer `app-debug.apk` to the Android phone and install it. Android may ask permission to install apps from that source.
-7. Add the widget: long-press home screen → Widgets → NorthStar Connect.
+4. Open the repository on GitHub → **Actions** → `NorthStar Connect Android APK`.
+5. Wait for the workflow to finish with a green check.
+6. Open the run and download the `NorthStar-Connect-debug-apk` artifact.
+7. Extract the downloaded artifact ZIP. Install `app-debug.apk` on the Android phone.
+8. Long-press the home screen → **Widgets** → **NorthStar Connect** → add it.
+
+The workflow also runs automatically on pushes to `main`. If GitHub asks you to sign in during `git push`, finish its browser authentication.
 
 ## Local build
 
-Requires JDK 17, Android SDK platform 35, and Gradle 8.7:
+Requires JDK 17, Android SDK Platform 35, and Gradle 8.7:
 
-```bash
+```powershell
 gradle -p android assembleDebug
 ```
 
-APK output:
-
-`android/app/build/outputs/apk/debug/app-debug.apk`
+APK path: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## Current limitations
 
-This is a first widget proof-of-concept. It displays a local fixed demo message.
-It does **not** yet send drawings between phones, use Firebase, or include accounts.
-The next milestone is a FastAPI sync service plus authenticated upload/download and
-Android background refresh. Do not put service credentials in the APK or GitHub repo.
+- This is a static widget proof-of-concept. It displays `Merhaba!` locally.
+- No backend, accounts, invitations, remote drawing upload, push notifications, or friend-to-friend sync yet.
+- Debug APK is suitable for installing/testing. Release signing is deliberately postponed until the app works.
 
-## Compatibility
+## NorthStar Connect roadmap
 
-- minSdk 26 (Android 8.0)
-- targetSdk 35
-- JDK 17
-- Android Gradle Plugin 8.6.1
-- Gradle 8.7
-- Kotlin 1.9.24
-- Jetpack Glance 1.1.1
+- [x] Android widget/app skeleton and debug APK CI workflow
+- [ ] Install and verify widget on a real Android device
+- [ ] Read/display a locally stored drawing in the widget
+- [ ] FastAPI sync backend and drawing upload/download
+- [ ] Friend invitation codes and authenticated sharing
+- [ ] Android background refresh / push notification integration
+- [ ] Two-way drawing exchange and drawing history
