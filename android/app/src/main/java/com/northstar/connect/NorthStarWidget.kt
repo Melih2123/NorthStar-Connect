@@ -40,7 +40,8 @@ class NorthStarWidget : GlanceAppWidget() {
                 } else null
             }.getOrNull()
         }
-        val drawingId = prefs.getLong("last_drawing_id", 0L)
+        val roomCode = SyncConfig.roomCode(context)
+        val roomLabel = if (roomCode.isNotBlank()) "SON ODA  •  $roomCode" else "HENÜZ ODA SEÇİLMEDİ"
 
         provideContent {
             Column(
@@ -56,6 +57,15 @@ class NorthStarWidget : GlanceAppWidget() {
                         color = ColorProvider(R.color.northstar_cyan),
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
+                    )
+                )
+                Spacer(modifier = GlanceModifier.height(4.dp))
+                Text(
+                    text = roomLabel,
+                    style = TextStyle(
+                        color = ColorProvider(R.color.northstar_muted),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 10.sp
                     )
                 )
                 Spacer(modifier = GlanceModifier.height(6.dp))
@@ -85,7 +95,7 @@ class NorthStarWidget : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.height(6.dp))
                     Text(
-                        text = "Uygulamadan oda koduna bağlan.",
+                        text = if (roomCode.isBlank()) "Uygulamadan bir odaya katıl." else "Oda tuvali yükleniyor. Açmak için dokun.",
                         style = TextStyle(
                             color = ColorProvider(R.color.northstar_muted),
                             fontSize = 10.sp

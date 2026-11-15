@@ -589,13 +589,17 @@ async def broadcast_chat_message(room_code: str, message: dict) -> None:
 
 
 async def broadcast_presence(room_code: str) -> None:
-    sockets = tuple(ROOM_CLIENTS[room_code])
-    viewers = sum(1 for socket in sockets if getattr(socket.state, "role", "editor") == "viewer")
+    # A stable installation/device is one participant, not one per socket.
+    roles_by_device: dict[str, str] = {}
+    for socket in tuple(ROOM_CLIENTS[room_code]):
+        device_id = getattr(socket.state, "device_id", "unknown")
+        roles_by_device[device_id] = getattr(socket.state, "role", "editor")
+    viewers = sum(1 for role in roles_by_device.values() if role == "viewer")
     payload = {
         "type": "presence",
-        "participants": len(sockets),
+        "participants": len(roles_by_device),
         "viewers": viewers,
-        "editors": len(sockets) - viewers,
+        "editors": len(roles_by_device) - viewers,
     }
     dead: list[WebSocket] = []
     for socket in tuple(ROOM_CLIENTS[room_code]):
@@ -624,8 +628,16 @@ async def collaborative_canvas(websocket: WebSocket, room_code: str):
     websocket.state.device_id = device_id
     lock = ROOM_LOCKS[code]
     async with lock:
-        # Send the authoritative history before registering the new peer. Other
-        # messages cannot interleave because all room writes use the same lock.
+        # Replace a stale socket from this same installation on reconnect.
+        for existing in tuple(ROOM_CLIENTS[code]):
+            if getattr(existing.state, "device_id", None) == device_id:
+                ROOM_CLIENTS[code].discard(existing)
+                try:
+                    await existing.close(code=4001, reason="Replaced by newer connection from this device")
+                except Exception:
+                    pass
+
+        # Send authoritative history before registering the new peer.
         await websocket.send_json({
             "type": "history",
             "events": load_canvas_history(code),

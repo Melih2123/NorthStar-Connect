@@ -1,4 +1,12 @@
-# NorthStar Connect v0.5.7 — Full Project
+## v0.5.8: single-device presence and widget room preview
+
+- Presence counts unique device IDs rather than raw WebSocket connections.
+- A reconnect from the same installation replaces its stale room socket.
+- Android board Activity uses `singleTask`, preventing duplicate instances from repeated widget taps.
+- Opening the board from the widget schedules an immediate snapshot refresh.
+- The widget displays the last saved room code above its canvas preview.
+
+# NorthStar Connect v0.5.8 — Full Project
 
 ## What's new
 - Last room auto-reconnects in the web editor after refresh.
@@ -9,7 +17,7 @@
 - Chat messages trigger Firebase push notifications to other registered Android devices. Notification text remains generic: `NorthStar Connect` / `Yeni resim eklendi`.
 
 ## Install / update
-1. Extract this ZIP. Copy the contents of `NorthStar-Connect-v0.5.7-Full-Project` over the existing repository root.
+1. Extract this ZIP. Copy the contents of `NorthStar-Connect-v0.5.8-Full-Project` over the existing repository root.
 2. Preserve `.git`, `backend/data/`, `backend/.venv/`, local Firebase credentials, and `android/app/google-services.json`.
 3. From repository root run:
    ```cmd
@@ -34,7 +42,7 @@ Photo selection/move/resize/delete is implemented in the PC/web editor and synch
 NorthStar Connect is now a **shared collaborative canvas**, not a send-one-image-at-a-time messenger. Every connected participant in a room sees the same board and can draw, erase, undo their own strokes, and clear the shared board.
 
 
-## v0.5.7: notification fallback without Firebase
+## v0.5.8: notification fallback without Firebase
 
 - The Android server field now defaults to the configured Tailscale Funnel URL: `https://melih-uzun.taild8cc3a.ts.net`. A manually entered server address still takes precedence.
 - When Firebase is not initialized, WorkManager polls `/api/rooms/{code}/updates` and displays local Android notifications for remote canvas changes and room messages.
@@ -159,7 +167,7 @@ The Android widget shows the latest server-rendered shared board snapshot. Tap t
 
 ## 6. Configure Firebase notifications (optional)
 
-Without Firebase, foreground WebSocket collaboration still works. The v0.5.7 Android client also polls the Tailscale Funnel using WorkManager and creates local notifications. This fallback normally checks no more often than every 15 minutes, may be delayed by Android battery management, and does not run while the OS has force-stopped the app.
+Without Firebase, foreground WebSocket collaboration still works. The v0.5.8 Android client also polls the Tailscale Funnel using WorkManager and creates local notifications. This fallback normally checks no more often than every 15 minutes, may be delayed by Android battery management, and does not run while the OS has force-stopped the app.
 
 ### Android Firebase config
 
@@ -304,7 +312,7 @@ The Android app source is under `android/`. It includes:
 
 - This is a debug APK, suitable for testing. It is not a Play Store release.
 - The Android app can use the realtime WebSocket shared-canvas connection while open.
-- Firebase gives the preferred near-instant push path. Without Firebase, v0.5.7 uses periodic Tailscale Funnel polling and local notifications; Android may delay the worker, and force-stopping the app prevents it from running.
+- Firebase gives the preferred near-instant push path. Without Firebase, v0.5.8 uses periodic Tailscale Funnel polling and local notifications; Android may delay the worker, and force-stopping the app prevents it from running.
 - Notification text is intentionally generic: title `NorthStar Connect`, body `Yeni resim eklendi`.
 - JARVIS's integrated Connect Viewer remains read-only; editing is done from Android or the PC web editor.
 - Android Gradle compilation must be verified by the GitHub Actions run. This environment did not run an Android SDK build.

@@ -15,8 +15,8 @@ android {
         applicationId 'com.northstar.connect'
         minSdk 26
         targetSdk 35
-        versionCode 9
-        versionName '0.5.7'
+        versionCode 11
+        versionName '0.5.8'
     }
 
     buildFeatures {

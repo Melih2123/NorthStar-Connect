@@ -50,6 +50,9 @@ class SharedBoardActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Widget launches this Activity directly; refresh the saved room snapshot.
+        SyncScheduler.schedule(this)
+        SyncScheduler.refreshNow(this)
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN

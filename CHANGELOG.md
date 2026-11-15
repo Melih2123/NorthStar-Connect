@@ -1,3 +1,12 @@
+# Changelog
+
+## 0.5.8
+- One installation counts as one room participant, even if duplicate sockets briefly exist.
+- Stale same-device WebSocket connections are replaced on reconnect.
+- Repeated widget taps reuse one Android board Activity.
+- Widget-launched board refreshes the saved room snapshot.
+- Widget displays the last joined room code.
+
 # NorthStar Connect v0.5.7
 
 ## Tailscale notification fallback
