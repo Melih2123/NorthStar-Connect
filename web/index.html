@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050a10">
+<title>NORTHSTAR // J.A.R.V.I.S. Hand Interface</title>
+<style>
+:root{--bg:#050a10;--panel:rgba(7,19,29,.82);--line:rgba(65,224,245,.27);--cyan:#48eaff;--cyan2:#13b8d0;--amber:#ffbd4a;--muted:#72909b;--text:#e6fbff;--green:#74f5bd;--red:#ff6f78;--shadow:0 0 28px rgba(29,207,235,.12),inset 0 0 22px rgba(32,199,224,.035)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 52% 42%,#102331 0,#07111a 40%,#03070b 100%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button{font:inherit;color:inherit}.shell{height:100%;min-height:560px;padding:18px 22px 15px;display:flex;flex-direction:column;gap:13px;max-width:1920px;margin:auto}.topbar{height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding:0 4px 12px;flex-shrink:0}.brand{display:flex;align-items:center;gap:13px}.brandmark{width:43px;height:43px;border:1px solid var(--cyan);clip-path:polygon(0 0,78% 0,100% 22%,100% 100%,22% 100%,0 78%);display:grid;place-items:center;color:var(--cyan);font-size:22px;text-shadow:0 0 14px var(--cyan);box-shadow:0 0 20px #21d9ed33}.brand h1{margin:0;font-size:20px;letter-spacing:.18em;font-weight:750}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.23em;margin-top:3px}.topright{display:flex;align-items:center;gap:18px;color:#92aeb8;font-size:10px;letter-spacing:.13em}.live{display:flex;align-items:center;gap:8px;color:var(--green)}.dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;display:inline-block}.clock{font-variant-numeric:tabular-nums;color:#b8d5dc}.workspace{flex:1;min-height:0;display:grid;grid-template-columns:252px minmax(400px,1fr) 248px;gap:13px}.panel{background:linear-gradient(145deg,rgba(10,26,38,.9),rgba(5,13,21,.82));border:1px solid var(--line);box-shadow:var(--shadow);position:relative;overflow:hidden}.panel:before{content:"";position:absolute;top:0;left:0;width:48px;height:2px;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}.side{padding:15px 14px;display:flex;flex-direction:column;gap:13px}.eyebrow{font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}.section-title{font-size:11px;letter-spacing:.15em;color:#c4e8ef;font-weight:700;margin:0 0 9px}.status-card{border:1px solid rgba(65,224,245,.16);background:rgba(2,11,18,.55);padding:11px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}.status-card label{display:block;color:var(--muted);font-size:9px;letter-spacing:.13em;margin-bottom:4px}.status-card strong{font-size:11px;letter-spacing:.08em;font-weight:650}.value{color:var(--cyan)}.state-good{color:var(--green)}.state-warn{color:var(--amber)}.meter{height:4px;background:#18303b;margin-top:8px;overflow:hidden}.meter i{height:100%;display:block;width:0;background:linear-gradient(90deg,var(--cyan2),var(--cyan));box-shadow:0 0 10px var(--cyan);transition:width .15s}.btn{border:1px solid rgba(72,234,255,.38);background:linear-gradient(110deg,rgba(13,99,119,.45),rgba(9,33,47,.75));padding:11px 12px;font-size:10px;font-weight:750;letter-spacing:.12em;text-align:left;cursor:pointer;transition:.18s;display:flex;align-items:center;justify-content:space-between;gap:8px}.btn:hover{border-color:var(--cyan);box-shadow:0 0 18px #32dff433;transform:translateY(-1px)}.btn.primary{background:linear-gradient(105deg,#0b788b,#124253);color:#edfdff}.btn.secondary{border-color:rgba(255,189,74,.35);color:#ffd48b;background:rgba(57,38,12,.24)}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.actions{display:grid;gap:7px}.shortcut{font-size:9px;color:#6e929e;letter-spacing:.04em;line-height:1.6}.key{border:1px solid #35505b;padding:1px 5px;color:#b7d7df;background:#0b1b24}.stage{min-width:0;display:flex;flex-direction:column}.stagebar{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border-bottom:1px solid var(--line);background:rgba(4,13,21,.78);flex-shrink:0}.stagebar strong{font-size:10px;letter-spacing:.17em}.stagebar span{font-size:9px;color:var(--muted);letter-spacing:.1em}.viewport{position:relative;flex:1;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 55% 45%,rgba(10,63,79,.42),transparent 48%),linear-gradient(145deg,#081721,#03080d);isolation:isolate}.viewport:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(70,211,231,.018) 4px 5px),radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.38) 100%)}#cameraVideo{position:absolute;width:100%;height:100%;inset:0;object-fit:cover;transform:scaleX(-1);opacity:.72;display:none;filter:saturate(.72) contrast(1.12)}#handCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}#threeMount{position:absolute;inset:0;z-index:2;pointer-events:none}#threeMount canvas{width:100%;height:100%;display:block}.viewport-grid{position:absolute;inset:0;z-index:1;opacity:.28;background-image:linear-gradient(rgba(39,192,218,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(39,192,218,.12) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse at center,#000 0%,transparent 76%)}.reticle{position:absolute;left:50%;top:50%;width:310px;height:310px;transform:translate(-50%,-50%);border:1px solid rgba(67,230,247,.16);border-radius:50%;z-index:1;box-shadow:0 0 0 18px rgba(67,230,247,.018),0 0 0 48px rgba(67,230,247,.012)}.reticle:before,.reticle:after{content:"";position:absolute;inset:15px;border:1px dashed rgba(64,222,241,.22);border-radius:50%;animation:spin 32s linear infinite}.reticle:after{inset:44px;border-style:solid;border-color:rgba(255,189,74,.22);animation-direction:reverse;animation-duration:22s}@keyframes spin{to{transform:rotate(360deg)}}.empty-state{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;z-index:2;pointer-events:none;width:min(400px,80%)}.empty-icon{margin:0 auto 18px;width:78px;height:78px;border:1px solid rgba(72,234,255,.5);border-radius:50%;display:grid;place-items:center;color:var(--cyan);font-size:29px;box-shadow:0 0 34px #31deef28,inset 0 0 24px #31deef17}.empty-state h2{margin:0;font-size:16px;letter-spacing:.23em;font-weight:650}.empty-state p{font-size:10px;line-height:1.8;color:#83a4ae;letter-spacing:.07em;margin:10px auto 0;max-width:330px}.corner{position:absolute;z-index:6;color:#8cb4be;font-size:9px;letter-spacing:.11em;pointer-events:none}.corner.tl{top:14px;left:15px}.corner.tr{top:14px;right:15px;text-align:right}.corner.bl{bottom:15px;left:15px}.corner.br{bottom:15px;right:15px;text-align:right}.corner b{color:var(--cyan);font-weight:700}.mini-hand{width:100%;height:125px;border:1px solid rgba(72,234,255,.16);background:rgba(3,11,17,.52);display:flex;align-items:center;justify-content:center;position:relative}.mini-hand svg{width:88%;height:88%;overflow:visible}.mini-hand .scanline{position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.4}.data-row{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#83a3ad;padding:7px 0;border-bottom:1px solid rgba(77,144,159,.12)}.data-row strong{color:#d2edf2;font-weight:600;font-variant-numeric:tabular-nums}.gesture-big{font-size:19px;letter-spacing:.09em;color:var(--amber);font-weight:750;margin:5px 0 2px}.gesture-sub{font-size:9px;color:var(--muted);letter-spacing:.1em}.log{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#81a3ad;font-size:9px;line-height:1.7;max-height:100px;overflow:hidden}.log div:before{content:"> ";color:var(--cyan)}.bottom{height:24px;display:flex;align-items:center;justify-content:space-between;color:#567782;font-size:9px;letter-spacing:.12em;flex-shrink:0}.bottom b{color:#8eb7c1;font-weight:600}.toast{position:absolute;left:50%;bottom:32px;transform:translate(-50%,12px);opacity:0;z-index:12;background:rgba(5,22,31,.94);border:1px solid var(--line);padding:10px 15px;color:#d9faff;font-size:10px;letter-spacing:.08em;transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}.camera-pill{color:var(--muted);font-size:9px;letter-spacing:.12em}.mic-active{color:var(--green)!important;border-color:var(--green)!important}.camera-select-wrap{display:grid;gap:6px;margin-bottom:9px}.camera-select{width:100%;min-width:0;border:1px solid rgba(72,234,255,.38);background:#071722;color:#d9faff;padding:10px 9px;font:inherit;font-size:10px;letter-spacing:.04em;outline:none}.camera-select:focus{border-color:var(--cyan);box-shadow:0 0 12px #32dff433}.camera-select:disabled{opacity:.5}.hidden{display:none!important}
+@media(max-width:1050px){.workspace{grid-template-columns:210px minmax(320px,1fr)}.right{display:none}.shell{padding:12px}.brand h1{font-size:16px}}
+@media(max-width:700px){html,body{overflow:auto}.shell{height:auto;min-height:100%;padding:10px}.topbar{height:auto}.topright .clock{display:none}.workspace{display:flex;flex-direction:column}.left{order:2}.stage{height:64vh;min-height:440px;order:1}.left{display:grid;grid-template-columns:1fr 1fr}.left .full{grid-column:1/-1}.right{display:flex;order:3}.side{padding:11px}.stagebar{height:38px}.bottom{font-size:8px}.brand small{font-size:8px}}
+
+.tabbar{height:auto;min-height:48px;justify-content:flex-start;gap:8px;padding:7px 12px;flex-wrap:wrap}
+.tab-btn{border:1px solid rgba(72,234,255,.22);background:rgba(3,15,23,.8);color:#83a3ad;padding:10px 16px;font-size:10px;letter-spacing:.14em;font-weight:750;cursor:pointer}
+.tab-btn.active{border-color:var(--cyan);color:#e5fcff;background:linear-gradient(110deg,rgba(13,99,119,.55),rgba(9,33,47,.8));box-shadow:inset 0 -2px var(--cyan),0 0 14px #32dff422}
+.tab-content{position:absolute;inset:0;z-index:4;overflow:auto;padding:22px;background:linear-gradient(145deg,rgba(5,17,26,.97),rgba(3,9,15,.98))}
+.tab-content[hidden]{display:none!important}
+#cameraTab{display:none!important}#threeMount{display:none!important}.reticle{display:none!important}
+.market-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.market-head h2{margin:4px 0;font-size:22px;letter-spacing:.12em;color:#e6fbff}
+.market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.metric-card,.content-card{border:1px solid rgba(72,234,255,.18);background:rgba(3,15,23,.76);padding:15px;min-width:0}
+.metric-card small,.content-card small{display:block;color:var(--muted);font-size:9px;letter-spacing:.15em;margin-bottom:9px}
+.metric-card strong{font-size:20px;color:#e8fbff;font-variant-numeric:tabular-nums}
+.positive{color:#52efb1!important}.negative{color:#ff8b8b!important}
+.content-card h3{font-size:11px;letter-spacing:.14em;color:#c9edf3;margin:0 0 12px}
+.stock-table{width:100%;border-collapse:collapse;font-size:11px}
+.stock-table th,.stock-table td{text-align:left;padding:11px 8px;border-bottom:1px solid rgba(72,234,255,.12)}
+.stock-table th{color:#7799a4;font-size:9px;letter-spacing:.12em}
+.stock-table td{color:#d0e8ed}
+.disclaimer{font-size:9px;line-height:1.7;color:#7899a3;margin-top:14px}
+.ai-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+.ai-score{font-size:42px;color:var(--cyan);font-weight:800}
+.ai-input{width:100%;background:#071722;border:1px solid rgba(72,234,255,.3);color:#e8fbff;padding:11px;font:inherit;margin:5px 0 10px}
+.draw-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.draw-toolbar button,.draw-toolbar input{border:1px solid rgba(72,234,255,.35);background:#071722;color:#d9faff;padding:8px 11px;font:inherit;font-size:10px}
+.draw-toolbar button{cursor:pointer}.draw-toolbar button:hover{border-color:var(--cyan)}
+#drawingCanvas{width:100%;height:min(58vh,520px);display:block;background:#f5f7f8;border:1px solid rgba(72,234,255,.45);touch-action:none;cursor:crosshair}
+.draw-note{color:#82a4ae;font-size:10px;line-height:1.7;margin-top:10px}
+@media(max-width:1050px){.workspace{grid-template-columns:220px minmax(0,1fr)}.side.right{display:none}.market-grid{grid-template-columns:1fr 1fr}.ai-layout{grid-template-columns:1fr}}
+@media(max-width:700px){.shell{padding:8px}.workspace{display:flex}.side.left{display:none}.stage{width:100%}.market-grid{grid-template-columns:1fr}.tab-btn{padding:9px 10px;font-size:9px}.tab-content{padding:13px}}
+
+
+/* NorthStar Connect read-only viewer */
+.side.left{overflow-y:auto;overflow-x:hidden}
+.connect-config{display:grid;gap:7px;margin-top:12px;padding:10px;border:1px solid rgba(72,234,255,.2);background:rgba(2,11,18,.45)}
+.connect-config input{width:100%;min-width:0;border:1px solid rgba(72,234,255,.3);background:#071722;color:#d9faff;padding:9px 8px;font:inherit;font-size:10px;letter-spacing:.03em;outline:none}
+.connect-config input:focus{border-color:var(--cyan);box-shadow:0 0 10px #32dff422}
+.connect-config .connect-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.connect-config .btn{padding:9px 8px;font-size:9px;justify-content:center;text-align:center}
+.connect-config .connect-status{font-size:9px;line-height:1.5;color:#8eabb5;min-height:28px;overflow-wrap:anywhere}
+.tab-content.connect-viewer{padding:14px;display:flex;flex-direction:column;gap:12px;overflow:hidden;background:linear-gradient(145deg,rgba(5,17,26,.98),rgba(3,9,15,.98))}
+.connect-viewer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0}
+.connect-viewer-head h2{font-size:15px;letter-spacing:.16em;margin:3px 0 0;color:#e6fbff}
+.viewer-state{display:flex;align-items:center;gap:7px;border:1px solid rgba(72,234,255,.2);padding:7px 10px;font-size:9px;letter-spacing:.11em;color:#92aeb8}
+.viewer-state .dot{background:var(--amber);color:var(--amber)}
+.viewer-state.online .dot{background:var(--green);color:var(--green)}
+.viewer-board-wrap{position:relative;flex:1;min-height:0;overflow:hidden;border:1px solid rgba(72,234,255,.28);background:#f7f8fa;box-shadow:0 0 24px rgba(29,207,235,.08)}
+.viewer-overlay[hidden]{display:none!important}
+#sharedViewerCanvas{display:block;width:100%;height:100%;background:#f7f8fa;pointer-events:none;user-select:none;-webkit-user-select:none;touch-action:none}
+.viewer-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:#172c36;text-align:center;padding:24px;font-size:12px;letter-spacing:.12em}
+.viewer-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;font-size:9px;color:#83a3ad;letter-spacing:.1em}
+.viewer-meta b{color:var(--cyan)}
+.viewer-editor-link{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(72,234,255,.35);padding-bottom:2px}
+.viewer-editor-link:hover{color:#e6fbff}
+.viewer-readonly{border:1px solid rgba(116,245,189,.28);padding:5px 8px;color:var(--green);font-size:8px;letter-spacing:.14em}
+.viewer-chat{flex-shrink:0;max-height:145px;min-height:90px;display:flex;flex-direction:column;border:1px solid rgba(72,234,255,.18);background:rgba(3,15,23,.72);overflow:hidden}
+.viewer-chat-title{padding:7px 10px;border-bottom:1px solid rgba(72,234,255,.12);color:var(--cyan);font-size:9px;letter-spacing:.14em;font-weight:800}
+.viewer-chat-feed{overflow:auto;padding:7px 10px;display:flex;flex-direction:column;gap:5px;font-size:10px;color:#d4e9ef}
+.viewer-chat-line{overflow-wrap:anywhere;line-height:1.35}.viewer-chat-line b{color:var(--cyan);margin-right:6px}.viewer-chat-line img{display:block;max-width:140px;max-height:60px;object-fit:contain;margin:4px 0;border-radius:4px;background:#fff}
+@media(max-width:700px){.connect-viewer-head h2{font-size:12px}.tab-content.connect-viewer{padding:10px}.viewer-meta{font-size:8px}}
+
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand"><div class="brandmark">✳</div><div><h1>NORTHSTAR <span style="color:var(--cyan)">/</span> J.A.R.V.I.S.</h1><small>JUST A RATHER VERY INTELLIGENT SYSTEM · WEB INTERFACE</small></div></div>
+    <div class="topright"><span class="live"><i class="dot"></i><span id="systemState">SYSTEM STANDBY</span></span><span class="clock" id="clock">00:00:00</span><span>BUILD 02.2.0 · CONNECT VIEWER</span></div>
+  </header>
+  <main class="workspace">
+    <aside class="panel side left">
+      <div><div class="eyebrow">01 / input subsystem</div><h3 class="section-title">SENSOR STATUS</h3>
+        <div class="status-card"><div><label>RGB CAMERA</label><strong id="cameraState">NOT CONNECTED</strong></div><span class="value" id="cameraIcon">◉</span></div>
+        <div class="status-card"><div><label>INFERENCE ENGINE</label><strong id="engineState">BROWSER FALLBACK</strong></div><span class="value">ML</span></div>
+        <div class="status-card"><div><label>HAND TRACKING</label><strong id="trackingState">OFFLINE</strong><div class="meter"><i id="trackingMeter"></i></div></div><span class="value">21 PT</span></div>
+        <div class="status-card"><div><label>PRIMARY / MEDIAPIPE HANDS</label><strong id="primaryModelState">NOT LOADED</strong></div><span class="value">MP</span></div>
+        <div class="status-card"><div><label>SECONDARY / RTMPOSE-M HAND5</label><strong id="secondaryModelState">NOT LOADED</strong></div><span class="value">ONNX</span></div>
+        <div class="status-card"><div><label>FUSION / MODEL CONSENSUS</label><strong id="fusionState">STANDBY</strong></div><span class="value">DUAL</span></div>
+        <div class="status-card"><div><label>INFERENCE SERVICE</label><strong id="modelState">NOT LOADED</strong></div><span class="value">LOCAL</span></div>
+      </div>
+      <div><div class="eyebrow">02 / gesture engine</div><h3 class="section-title">LIVE GESTURE</h3>
+        <div class="status-card" style="display:block"><div class="gesture-big" id="gestureName">IDLE</div><div class="gesture-sub" id="gestureHint">SHOW ONE HAND TO CAMERA</div></div>
+        <div class="data-row"><span>PINCH RATIO</span><strong id="pinchValue">--</strong></div><div class="data-row"><span>HAND POSITION</span><strong id="handPosition">-- / --</strong></div><div class="data-row"><span>MODEL METRIC / AGREEMENT GATE</span><strong id="confidence">--</strong></div>
+      </div>
+      <div class="full"><div class="eyebrow">03 / controls</div><h3 class="section-title">SYSTEM COMMANDS</h3><div class="camera-select-wrap"><label class="eyebrow" for="cameraSelect">ACTIVE CAMERA SOURCE</label><select class="camera-select" id="cameraSelect" disabled><option value="">CONNECT CAMERA TO SCAN DEVICES</option></select></div><div class="actions">
+        <button class="btn primary" id="startBtn"><span>▶ &nbsp; INITIALIZE CAMERA</span><span>01</span></button>
+        <button class="btn" id="stopBtn" disabled><span>■ &nbsp; DISCONNECT CAMERA</span><span>02</span></button>
+        <button class="btn secondary" id="resetBtn"><span>↺ &nbsp; RECENTER MODEL</span><span>03</span></button>
+        <button class="btn secondary" id="overrideBtn" aria-pressed="false" disabled><span>⚠ &nbsp; SINGLE-MODEL OVERRIDE</span><span id="overrideState">LOCKED</span></button>
+        <button class="btn" id="voiceBtn"><span>◖ &nbsp; VOICE COMMAND LINK</span><span id="voiceState">OFF</span></button>
+      </div></div>
+      <div class="full connect-config">
+        <div class="eyebrow">04 / NORTHSTAR CONNECT</div><h3 class="section-title">SHARED BOARD FEED</h3>
+        <label class="eyebrow" for="connectServer">SERVER URL</label>
+        <input id="connectServer" type="url" spellcheck="false" aria-label="Connect server URL">
+        <label class="eyebrow" for="connectRoom">ROOM CODE</label>
+        <input id="connectRoom" maxlength="12" autocomplete="off" spellcheck="false" placeholder="12 CHARACTER ROOM CODE" aria-label="Shared room code">
+        <div class="connect-actions">
+          <button class="btn primary" id="connectViewerBtn" type="button">CONNECT VIEWER</button>
+          <button class="btn" id="disconnectViewerBtn" type="button" disabled>DISCONNECT</button>
+        </div>
+        <div class="connect-status" id="connectViewerStatus" aria-live="polite">VIEWER OFFLINE · Configure a room code to watch the shared board.</div>
+      </div>
+      <div class="full shortcut">CAMERA ACCESS REQUIRES HTTPS OR LOCALHOST.<br>DUAL-MODEL AGREEMENT IS REQUIRED FOR NORMAL CONTROL.<br>CONNECT VIEWER IS READ-ONLY. DRAWING IS DONE FROM PHONE / PC EDITOR.<br><span class="key">R</span> recenter &nbsp; <span class="key">SPACE</span> pause motion</div>
+    </aside>
+
+    <section class="panel stage">
+      <div class="stagebar tabbar" role="tablist" aria-label="JARVIS workspaces">
+        <button class="tab-btn" data-tab="stocks" role="tab" aria-selected="false">01 / BORSA</button>
+        <button class="tab-btn" data-tab="ai" role="tab" aria-selected="false">02 / YZ HİSSE</button>
+        <button class="tab-btn active" data-tab="connect" role="tab" aria-selected="true">03 / CONNECT VIEWER</button>
+      </div>
+      <div class="viewport" id="viewport">
+        <div class="viewport-grid"></div>
+        <div id="cameraTab" aria-hidden="true"><span id="viewMode" class="hidden">SIMULATION VIEW · CAMERA OFF</span>
+          <video id="cameraVideo" autoplay playsinline muted></video>
+          <canvas id="handCanvas"></canvas><div id="threeMount"></div>
+          <div class="empty-state" id="emptyState"><div class="empty-icon">⌖</div><h2>AWAITING OPTICAL INPUT</h2><p>INITIALIZE THE RGB CAMERA TO ACTIVATE SINGLE-CAMERA HAND TRACKING.</p></div>
+          <div class="corner tl">NORTHSTAR // <b>OPTICAL LINK</b><br><span id="resolution">INPUT: VIRTUAL</span></div>
+          <div class="corner tr">TRACKING MODE<br><b id="trackingMode">STANDBY</b></div>
+          <div class="corner bl">GESTURE BUS: <b id="gestureBus">IDLE</b><br>COORDINATE SPACE: NORMALIZED 2D</div>
+          <div class="corner br">FPS <b id="fps">--</b><br>RENDER <b>WEBGL</b></div>
+        </div>
+
+        <section class="tab-content" id="tab-stocks" role="tabpanel" hidden>
+          <div class="market-head"><div><div class="eyebrow">NORTHSTAR / MARKET INTELLIGENCE</div><h2>MARKET OVERVIEW</h2><div class="eyebrow">PİYASA PANELİ · ÖRNEK GÖRÜNÜM</div></div><span class="badge state-warn">DEMO DATA · CANLI DEĞİL</span></div>
+          <div class="market-grid">
+            <div class="metric-card"><small>BIST 100</small><strong>—</strong><div class="disclaimer">Veri sağlayıcısı bağlanmayı bekliyor</div></div>
+            <div class="metric-card"><small>USD / TRY</small><strong>—</strong><div class="disclaimer">Canlı kur entegrasyonu bekliyor</div></div>
+            <div class="metric-card"><small>PORTFÖY DEĞİŞİMİ</small><strong>—</strong><div class="disclaimer">Portföy eklenmedi</div></div>
+          </div>
+          <div class="content-card"><h3>WATCHLIST / TAKİP LİSTESİ</h3>
+            <table class="stock-table"><thead><tr><th>SEMBOL</th><th>ŞİRKET</th><th>SON FİYAT</th><th>DEĞİŞİM</th></tr></thead><tbody>
+              <tr><td>THYAO</td><td>Türk Hava Yolları</td><td>—</td><td>—</td></tr>
+              <tr><td>ASELS</td><td>Aselsan</td><td>—</td><td>—</td></tr>
+              <tr><td>TUPRS</td><td>Tüpraş</td><td>—</td><td>—</td></tr>
+              <tr><td>FROTO</td><td>Ford Otosan</td><td>—</td><td>—</td></tr>
+            </tbody></table>
+            <p class="disclaimer">Bu ekranda kasıtlı olarak sahte fiyat gösterilmiyor. Canlı veriler için lisanslı/API veri kaynağı bağlanması gerekir.</p>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-ai" role="tabpanel" hidden>
+          <div class="market-head"><div><div class="eyebrow">NORTHSTAR / LOCAL AI</div><h2>YZ HİSSE ANALİZİ</h2><div class="eyebrow">YEREL MODEL + PİYASA VERİSİ</div></div><span class="badge state-warn">MODEL BEKLEMEDE</span></div>
+          <div class="ai-layout">
+            <div class="content-card"><h3>ANALİZ EDİLECEK SEMBOL</h3><input class="ai-input" id="aiSymbol" value="THYAO" maxlength="16" aria-label="Hisse sembolü"><button class="btn primary" id="analyzeBtn"><span>▶ ANALİZİ HAZIRLA</span><span>AI</span></button><p class="disclaimer" id="aiStatus">Henüz veri kaynağı veya yerel analiz modeli bağlanmadı. Bu prototip yatırım tavsiyesi üretmez.</p></div>
+            <div class="content-card"><small>MODEL OUTPUT</small><div class="ai-score">--</div><h3>ANALİZ PUANI</h3><p class="disclaimer">Puan; doğrulanmış fiyat geçmişi, bilanço verisi ve model çıktısı bağlandıktan sonra hesaplanacak. Şimdilik rastgele skor yok.</p></div>
+          </div>
+          <div class="content-card" style="margin-top:14px"><h3>ANALİZ PIPELINE</h3><div class="data-row"><span>MARKET DATA</span><strong>NOT CONNECTED</strong></div><div class="data-row"><span>LOCAL MODEL</span><strong>NOT CONNECTED</strong></div><div class="data-row"><span>RISK ENGINE</span><strong>NOT CALIBRATED</strong></div></div>
+        </section>
+
+        <section class="tab-content connect-viewer" id="tab-connect" role="tabpanel">
+          <div class="connect-viewer-head">
+            <div><div class="eyebrow">NORTHSTAR / REALTIME COLLABORATION</div><h2>SHARED CANVAS · LIVE VIEW</h2></div>
+            <div class="viewer-state" id="viewerState"><i class="dot"></i><span id="viewerStateText">DISCONNECTED</span></div>
+          </div>
+          <div class="viewer-board-wrap" id="viewerBoardWrap">
+            <canvas id="sharedViewerCanvas" width="1200" height="650" aria-label="Read-only shared canvas viewer"></canvas>
+            <div class="viewer-overlay" id="viewerEmpty">CONNECT VIEWER READY<br>Enter the room code in the left panel and connect.</div>
+          </div>
+          <div class="viewer-meta">
+            <span>ROOM <b id="viewerRoomLabel">NOT JOINED</b></span>
+            <span>CONNECTED CLIENTS <b id="viewerParticipants">0</b></span>
+            <span class="viewer-readonly">VIEWER ONLY · INPUT DISABLED</span>
+            <a class="viewer-editor-link" id="openEditorLink" href="/connect-drawing.html" target="_blank" rel="noopener">OPEN EDITOR ON PHONE / PC ↗</a>
+          </div>
+          <div class="viewer-chat" aria-label="Read-only room chat">
+            <div class="viewer-chat-title">ROOM CHAT · READ ONLY</div>
+            <div class="viewer-chat-feed" id="viewerChatFeed"><span>Room messages appear here when you connect.</span></div>
+          </div>
+        </section>
+        <div class="toast" id="toast">SYSTEM READY</div>
+      </div>
+    </section>
+
+    <aside class="panel side right">
+      <div><div class="eyebrow">04 / visual telemetry</div><h3 class="section-title">HAND LANDMARK MAP</h3><div class="mini-hand"><span class="scanline"></span><svg viewBox="0 0 180 120" aria-label="Hand landmark diagram"><g stroke="#1c8ea1" stroke-width="1.5" fill="none"><path d="M86 101 L79 68 L57 43 L48 22 L39 19 L36 27 L51 55 L34 35 L26 37 L28 44 L48 67 L29 55 L21 59 L26 67 L54 83 L43 79 L37 84 L44 91 L73 109 Z"/><path d="M79 68 L82 35 L78 13 L71 10 L67 15 L69 49 M82 35 L94 11 L102 8 L107 14 L97 47 M97 47 L113 29 L121 30 L123 37 L107 59 M107 59 L125 50 L133 54 L130 63 L105 77"/></g><g fill="#48eaff" filter="drop-shadow(0 0 3px #48eaff)"><circle cx="86" cy="101" r="2.5"/><circle cx="79" cy="68" r="2.5"/><circle cx="57" cy="43" r="2.5"/><circle cx="48" cy="22" r="2.5"/><circle cx="82" cy="35" r="2.5"/><circle cx="78" cy="13" r="2.5"/><circle cx="97" cy="47" r="2.5"/><circle cx="102" cy="8" r="2.5"/><circle cx="107" cy="59" r="2.5"/><circle cx="121" cy="30" r="2.5"/></g></svg></div></div>
+      <div><div class="eyebrow">05 / object telemetry</div><h3 class="section-title">3D ASSEMBLY</h3>
+        <div class="data-row"><span>OBJECT STATE</span><strong id="objectState">READY</strong></div><div class="data-row"><span>POSITION X</span><strong id="posX">0.00</strong></div><div class="data-row"><span>POSITION Y</span><strong id="posY">0.00</strong></div><div class="data-row"><span>ROTATION Z</span><strong id="rotZ">0.0°</strong></div><div class="data-row"><span>SCALE</span><strong id="scaleValue">1.00×</strong></div>
+      </div>
+      <div><div class="eyebrow">06 / system diagnostics</div><h3 class="section-title">EVENT LOG</h3><div class="log" id="eventLog"><div>JARVIS UI boot sequence</div><div>WebGL renderer initialized</div><div>Awaiting camera permission</div></div></div>
+      <div class="shortcut">SINGLE RGB SENSOR · ONE HAND<br>DUAL MODEL CHECK · RELATIVE 2D/DEPTH HINTS<br>NOT A METRIC DEPTH SENSOR.</div>
+    </aside>
+  </main>
+  <footer class="bottom"><span>© NORTHSTAR INTERFACE // EXPERIMENTAL WEB PROTOTYPE · READ-ONLY CONNECT FEED</span><span><b>LOOPBACK PROCESSING</b> · FRAMES SENT ONLY TO 127.0.0.1</span></footer>
+</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
+
+
+// ---------- Workspace tabs + Connect VIEWER (read-only) ----------
+const $ = id => document.getElementById(id);
+const viewerCanvas = $('sharedViewerCanvas');
+const viewerCtx = viewerCanvas.getContext('2d', { alpha: false });
+let viewerSocket = null, viewerReconnectTimer = null, viewerReconnectAttempt = 0;
+let viewerShouldReconnect = false, viewerIntentionalClose = false;
+const viewerStrokes = new Map(), viewerDeletedStrokes = new Map(), viewerOrder = [], viewerSeenEvents = new Set();
+const viewerImages = new Map();
+const viewerDeviceId = (() => {
+  try {
+    let id = sessionStorage.getItem('northstar-jarvis-viewer-id');
+    if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : 'jarvis-viewer-' + Math.random().toString(36).slice(2)); sessionStorage.setItem('northstar-jarvis-viewer-id', id); }
+    return id;
+  } catch (_) { return crypto.randomUUID ? crypto.randomUUID() : 'jarvis-viewer-' + Math.random().toString(36).slice(2); }
+})();
+function viewerBlank() {
+  viewerCtx.save(); viewerCtx.globalCompositeOperation = 'source-over';
+  viewerCtx.fillStyle = '#f7f8fa'; viewerCtx.fillRect(0, 0, viewerCanvas.width, viewerCanvas.height); viewerCtx.restore();
+}
+function viewerDrawStroke(stroke) {
+  if (!stroke || !stroke.points || !stroke.points.length) return;
+  viewerCtx.save(); viewerCtx.lineCap = 'round'; viewerCtx.lineJoin = 'round';
+  viewerCtx.lineWidth = stroke.width * viewerCanvas.width;
+  viewerCtx.globalCompositeOperation = stroke.tool === 'eraser' ? 'destination-out' : 'source-over';
+  viewerCtx.globalAlpha = stroke.tool === 'marker' ? 0.34 : 1;
+  viewerCtx.strokeStyle = stroke.color || '#122632';
+  viewerCtx.beginPath();
+  const first = stroke.points[0]; viewerCtx.moveTo(first[0] * viewerCanvas.width, first[1] * viewerCanvas.height);
+  if (stroke.points.length === 1) viewerCtx.lineTo(first[0] * viewerCanvas.width + .01, first[1] * viewerCanvas.height + .01);
+  else for (let i = 1; i < stroke.points.length; i++) viewerCtx.lineTo(stroke.points[i][0] * viewerCanvas.width, stroke.points[i][1] * viewerCanvas.height);
+  viewerCtx.stroke(); viewerCtx.restore();
+}
+function viewerRedraw() {
+  viewerBlank(); for (const id of viewerOrder) viewerDrawStroke(viewerStrokes.get(id));
+  for (const image of viewerImages.values()) if (image.complete && image.naturalWidth) {
+    const m=image.meta;viewerCtx.drawImage(image,m.x*viewerCanvas.width,m.y*viewerCanvas.height,m.width*viewerCanvas.width,m.height*viewerCanvas.height);
+  }
+}
+function viewerLoadImage(payload) {
+  const key=String(payload.image_id);if(viewerImages.has(key))return;
+  const image=new Image();image.meta={image_id:Number(payload.image_id),x:Number(payload.x)||.2,y:Number(payload.y)||.2,width:Number(payload.width)||.35,height:Number(payload.height)||.35};
+  image.onload=viewerRedraw;image.onerror=()=>console.warn('Viewer image could not be loaded');
+  image.src=viewerServerUrl()+(payload.image_url||'');viewerImages.set(key,image);
+}
+function viewerAppendChat(message) {
+  const feed=$('viewerChatFeed');const placeholder=feed.querySelector('span');if(placeholder)feed.replaceChildren();
+  const line=document.createElement('div');line.className='viewer-chat-line';
+  const sender=document.createElement('b');sender.textContent=(message.sender||'ROOM MEMBER')+':';line.append(sender);
+  if(message.text){const text=document.createElement('span');text.textContent=message.text;line.append(text);}
+  if(message.attachment_url){const image=document.createElement('img');image.src=viewerServerUrl()+message.attachment_url;image.alt='Shared chat image';line.append(document.createElement('br'),image);}
+  feed.append(line);feed.scrollTop=feed.scrollHeight;
+}
+function viewerRenderChat(messages){const feed=$('viewerChatFeed');feed.replaceChildren();if(!messages||!messages.length){const empty=document.createElement('span');empty.textContent='No messages yet.';feed.append(empty);return;}for(const message of messages)viewerAppendChat(message); }
+function viewerApplyEvent(ev) {
+  if (ev.event_id && viewerSeenEvents.has(ev.event_id)) return;
+  if (ev.event_id) viewerSeenEvents.add(ev.event_id);
+  const p = ev.payload || {};
+  if (ev.type === 'clear') { viewerStrokes.clear(); viewerDeletedStrokes.clear(); viewerImages.clear(); viewerOrder.length = 0; viewerSeenEvents.clear(); viewerRedraw(); return; }
+  if (ev.type === 'stroke_begin') {
+    const stroke = { id: ev.stroke_id, color: p.color || '#122632', width: Number(p.width) || .006, tool: p.tool || 'pen', points: p.point ? [[p.point[0], p.point[1]]] : [] };
+    if (!viewerStrokes.has(stroke.id)) { viewerStrokes.set(stroke.id, stroke); viewerOrder.push(stroke.id); }
+  } else if (ev.type === 'stroke_points') {
+    const stroke = viewerStrokes.get(ev.stroke_id); if (stroke && Array.isArray(p.points)) stroke.points.push(...p.points);
+  } else if (ev.type === 'stroke_delete') {
+    const target = p.target_stroke_id; const removed = viewerStrokes.get(target); if (removed) viewerDeletedStrokes.set(target, removed); viewerStrokes.delete(target);
+    const index = viewerOrder.indexOf(target); if (index >= 0) viewerOrder.splice(index, 1);
+  } else if (ev.type === 'stroke_restore') {
+    const target = p.target_stroke_id;
+    const restored = viewerDeletedStrokes.get(target);
+    if (restored) { viewerStrokes.set(target, restored); viewerOrder.push(target); viewerDeletedStrokes.delete(target); }
+  } else if (ev.type === 'image_add') {
+    viewerLoadImage(p);
+  } else if (ev.type === 'image_update') {
+    const image=viewerImages.get(String(p.image_id));if(image)Object.assign(image.meta,{x:p.x,y:p.y,width:p.width,height:p.height});
+  } else if (ev.type === 'image_delete') {
+    viewerImages.delete(String(p.image_id));
+  }
+  viewerRedraw();
+}
+function setViewerState(online, text) {
+  $('viewerState').classList.toggle('online', !!online);
+  $('viewerStateText').textContent = text;
+  $('connectViewerStatus').textContent = text;
+  $('connectViewerBtn').disabled = !!online;
+  $('disconnectViewerBtn').disabled = !online && !viewerShouldReconnect;
+}
+function viewerServerUrl() {
+  const value = $('connectServer').value.trim();
+  return (value || (location.protocol === 'http:' || location.protocol === 'https:' ? location.origin : 'http://127.0.0.1:8000')).replace(/\/+$/, '');
+}
+function viewerRoomCode() { return $('connectRoom').value.trim().toUpperCase(); }
+function viewerWebSocketUrl() {
+  const url = new URL(viewerServerUrl());
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  url.pathname = '/ws/rooms/' + encodeURIComponent(viewerRoomCode());
+  url.search = '';
+  url.searchParams.set('device_id', viewerDeviceId);
+  url.searchParams.set('role', 'viewer');
+  return url.toString();
+}
+async function connectReadOnlyViewer() {
+  const server = viewerServerUrl(), room = viewerRoomCode();
+  if (!/^https?:\/\//i.test(server) || !/^[A-Z0-9]{12}$/.test(room)) {
+    setViewerState(false, 'SERVER URL AND 12-CHARACTER ROOM CODE REQUIRED'); return;
+  }
+  viewerShouldReconnect = true; viewerIntentionalClose = false;
+  if (viewerReconnectTimer) { clearTimeout(viewerReconnectTimer); viewerReconnectTimer = null; }
+  if (viewerSocket) { viewerSocket.onclose = null; viewerSocket.close(); viewerSocket = null; }
+  viewerRoomCodeLabel();
+  setViewerState(false, 'CONNECTING TO READ-ONLY FEED...');
+  $('viewerEmpty').hidden = false; $('viewerEmpty').innerHTML = 'CONNECTING TO SHARED BOARD...';
+  let socket;
+  try { socket = new WebSocket(viewerWebSocketUrl()); viewerSocket = socket; }
+  catch (err) { setViewerState(false, 'WEBSOCKET URL ERROR: ' + err.message); return; }
+  socket.onopen = () => { if (viewerSocket !== socket) return; viewerReconnectAttempt = 0; setViewerState(true, 'LIVE · VIEWER ONLY'); };
+  socket.onmessage = event => {
+    if (viewerSocket !== socket) return;
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type === 'history') {
+        viewerStrokes.clear(); viewerDeletedStrokes.clear(); viewerImages.clear(); viewerOrder.length = 0; viewerSeenEvents.clear();
+        for (const item of (message.events || [])) viewerApplyEvent(item);
+        viewerRenderChat(message.messages || []);
+        $('viewerEmpty').hidden = viewerStrokes.size > 0 || viewerImages.size > 0;
+        if (viewerStrokes.size === 0 && viewerImages.size === 0) $('viewerEmpty').innerHTML = 'SHARED BOARD IS EMPTY';
+        setViewerState(true, 'LIVE · READ-ONLY');
+      } else if (message.type === 'event') {
+        viewerApplyEvent(message.event);
+        if (viewerStrokes.size === 0 && viewerImages.size === 0) $('viewerEmpty').innerHTML = 'SHARED BOARD IS EMPTY';
+        $('viewerEmpty').hidden = viewerStrokes.size > 0 || viewerImages.size > 0;
+      } else if (message.type === 'chat_message') {
+        viewerAppendChat(message.message);
+      } else if (message.type === 'presence') {
+        $('viewerParticipants').textContent = String(message.participants ?? 0);
+      } else if (message.type === 'error') {
+        setViewerState(false, 'SERVER: ' + (message.message || 'UNKNOWN ERROR'));
+      }
+    } catch (err) { console.error('Connect viewer message error', err); }
+  };
+  socket.onerror = () => { if (viewerSocket === socket) setViewerState(false, 'CONNECTION ERROR · RETRYING'); };
+  socket.onclose = event => {
+    if (viewerSocket !== socket || !viewerShouldReconnect || viewerIntentionalClose) return;
+    $('viewerParticipants').textContent = '0';
+    if (event.code === 4404 || event.code === 4400) {
+      viewerShouldReconnect = false;
+      setViewerState(false, event.code === 4404 ? 'ROOM NOT FOUND · CHECK ROOM CODE' : 'INVALID VIEWER CONNECTION');
+      return;
+    }
+    setViewerState(false, 'FEED LOST · RECONNECTING');
+    const delay = Math.min(30000, 1000 * (2 ** Math.min(viewerReconnectAttempt, 5)));
+    viewerReconnectAttempt++;
+    viewerReconnectTimer = setTimeout(connectReadOnlyViewer, delay);
+  };
+}
+function viewerRoomCodeLabel() { $('viewerRoomLabel').textContent = viewerRoomCode() || 'NOT JOINED'; }
+function disconnectReadOnlyViewer() {
+  viewerShouldReconnect = false; viewerIntentionalClose = true;
+  if (viewerReconnectTimer) { clearTimeout(viewerReconnectTimer); viewerReconnectTimer = null; }
+  if (viewerSocket) { viewerSocket.onclose = null; viewerSocket.close(); viewerSocket = null; }
+  $('viewerParticipants').textContent = '0';
+  setViewerState(false, 'DISCONNECTED');
+  $('viewerEmpty').hidden = false; $('viewerEmpty').innerHTML = 'VIEWER DISCONNECTED';
+  viewerRoomCodeLabel();
+}
+$('connectServer').value = (location.protocol === 'http:' || location.protocol === 'https:') ? location.origin : 'http://127.0.0.1:8000';
+$('connectRoom').addEventListener('input', viewerRoomCodeLabel);
+$('connectViewerBtn').addEventListener('click', connectReadOnlyViewer);
+$('disconnectViewerBtn').addEventListener('click', disconnectReadOnlyViewer);
+viewerBlank();
+
+function isConnectViewerActive() { return !$('tab-connect').hidden; }
+document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+  document.querySelectorAll('.tab-content').forEach(panel => panel.hidden = panel.id !== `tab-${btn.dataset.tab}`);
+  if (btn.dataset.tab === 'connect') viewerRoomCodeLabel();
+}));
+
+const video = $('cameraVideo'), canvas = $('handCanvas'), ctx = canvas.getContext('2d');
+const viewport = $('viewport');
+let stream = null, landmarker = null, running = false, raf = 0, lastVideoTime = -1, cameraSwitching = false;
+let currentGesture = 'IDLE', pinchActive = false, fpsFrames = 0, fpsLast = performance.now(), smoothHand = null, lastLog = 0, speech = null;
+let paused = false, mouseDown = false;
+let backendSocket = null, backendActive = false, backendReady = false, backendBusy = false, lastBackendSend = 0;
+let singleModelOverride = false, fallbackRequested = false, browserLoading = false, lastBackendMessageAt = 0;
+const frameCanvas = document.createElement('canvas');
+const frameCtx = frameCanvas.getContext('2d', { alpha: false });
+
+// ---------- Three.js holographic object ----------
+const scene = new THREE.Scene();
+const camera3D = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+camera3D.position.set(0, 0, 8.4);
+const renderer = new THREE.WebGLRenderer({ alpha:true, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+$('threeMount').appendChild(renderer.domElement);
+const root = new THREE.Group(); scene.add(root);
+const rotor = new THREE.Group(); root.add(rotor);
+const cyan = 0x43eaff, cyanSoft = 0x17aabd, amber = 0xffbd4a;
+const glowMat = new THREE.MeshBasicMaterial({color:cyan, transparent:true, opacity:.76});
+const solidMat = new THREE.MeshBasicMaterial({color:0x0e778c, transparent:true, opacity:.34, side:THREE.DoubleSide});
+function addRing(radius, tube, color, z=0, opacity=.75){const m=new THREE.Mesh(new THREE.TorusGeometry(radius,tube,12,120),new THREE.MeshBasicMaterial({color,transparent:true,opacity}));m.position.z=z;rotor.add(m);return m;}
+function addEdges(geometry, color=cyan, opacity=.8){const edges=new THREE.EdgesGeometry(geometry);const line=new THREE.LineSegments(edges,new THREE.LineBasicMaterial({color,transparent:true,opacity}));rotor.add(line);return line;}
+// Floating turbine / impeller assembly
+const housing = new THREE.Mesh(new THREE.CylinderGeometry(.72,.94,.34,64,1,true),solidMat); housing.rotation.x=Math.PI/2; rotor.add(housing); addEdges(housing.geometry,cyan,.5).rotation.x=Math.PI/2;
+const frontRing=addRing(.93,.025,cyan,.22,.9); const innerRing=addRing(.69,.018,amber,.25,.9); const rearRing=addRing(.81,.012,cyanSoft,-.22,.65);
+const hub=new THREE.Mesh(new THREE.CylinderGeometry(.26,.31,.5,48),new THREE.MeshBasicMaterial({color:0x0d6074,transparent:true,opacity:.72}));hub.rotation.x=Math.PI/2;rotor.add(hub);addEdges(hub.geometry,cyan,.9).rotation.x=Math.PI/2;
+const hubCore=new THREE.Mesh(new THREE.SphereGeometry(.12,24,16),new THREE.MeshBasicMaterial({color:cyan,transparent:true,opacity:.95}));hubCore.position.z=.29;rotor.add(hubCore);
+for(let i=0;i<9;i++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.115,1.08,.055),new THREE.MeshBasicMaterial({color:i%3===0?amber:cyan,transparent:true,opacity:.54}));blade.position.set(0,.66,.04);blade.rotation.z=i*Math.PI*2/9+.12;rotor.add(blade);const bladeEdges=addEdges(blade.geometry,cyan,.8);bladeEdges.position.copy(blade.position);bladeEdges.rotation.copy(blade.rotation);}
+// Outer technical arcs, ticks and floating rings
+const halo= new THREE.Group();root.add(halo);
+for(let i=0;i<48;i++){const a=i/48*Math.PI*2;const r=1.38;const len=i%4===0?.16:.07;const p1=new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,.05),p2=new THREE.Vector3(Math.cos(a)*(r+len),Math.sin(a)*(r+len),.05);const g=new THREE.BufferGeometry().setFromPoints([p1,p2]);halo.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:i%4===0?amber:cyan,transparent:true,opacity:i%4===0?.8:.38})));}
+const outerArc=addRing(1.48,.006,cyan,.02,.35);rotor.remove(outerArc);halo.add(outerArc);
+const orbit= new THREE.Mesh(new THREE.TorusGeometry(1.72,.008,6,160),new THREE.MeshBasicMaterial({color:amber,transparent:true,opacity:.55}));orbit.rotation.x=.12;orbit.rotation.y=.26;halo.add(orbit);
+// Floor projection grid
+const grid = new THREE.GridHelper(8,32,0x1c9db1,0x145366);grid.rotation.x=Math.PI/2;grid.position.set(0,-1.75,-.85);grid.material.transparent=true;grid.material.opacity=.22;scene.add(grid);
+const axis=new THREE.AxesHelper(.42);axis.material.transparent=true;axis.material.opacity=.4;root.add(axis);
+function resize(){const w=viewport.clientWidth,h=viewport.clientHeight;renderer.setSize(w,h,false);camera3D.aspect=w/h;camera3D.updateProjectionMatrix();canvas.width=Math.round(w*devicePixelRatio);canvas.height=Math.round(h*devicePixelRatio);canvas.style.width=w+'px';canvas.style.height=h+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);}
+new ResizeObserver(resize).observe(viewport); resize();
+let targetX=0,targetY=0,targetRot=0,scaleTarget=1,grabStartPalmWidth=0,grabStartScale=1;
+function animate(){requestAnimationFrame(animate);const t=performance.now()*.001;if(!paused){rotor.rotation.y+=.0019;halo.rotation.z-=.00055;root.rotation.z+=(targetRot-root.rotation.z)*.13;root.position.x+=(targetX-root.position.x)*.18;root.position.y+=(targetY-root.position.y)*.18;const s=root.scale.x+(scaleTarget-root.scale.x)*.1;root.scale.setScalar(s);}frontRing.rotation.z=t*.1;orbit.rotation.z=-t*.08;renderer.render(scene,camera3D);$('posX').textContent=root.position.x.toFixed(2);$('posY').textContent=root.position.y.toFixed(2);$('rotZ').textContent=(root.rotation.z*180/Math.PI).toFixed(1)+'°';$('scaleValue').textContent=root.scale.x.toFixed(2)+'×';}
+animate();
+
+// ---------- UI helpers ----------
+function log(message){const box=$('eventLog'),line=document.createElement('div');line.textContent=message;box.appendChild(line);while(box.children.length>5)box.removeChild(box.firstChild);}
+let toastTimer=0;function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);}
+function setSystemState(text,good=false){$('systemState').textContent=text;$('systemState').style.color=good?'var(--green)':'var(--amber)';}
+function setGesture(name,hint=''){currentGesture=name;$('gestureName').textContent=name;$('gestureHint').textContent=hint;$('gestureBus').textContent=name;$('gestureName').style.color=name==='PINCH'?'var(--amber)':name==='OPEN PALM'?'var(--green)':'var(--cyan)';}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function lerp(a,b,t){return a+(b-a)*t;}
+const connections=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+function drawHand(points){const w=viewport.clientWidth,h=viewport.clientHeight;ctx.clearRect(0,0,w,h);if(!points)return;const xy=p=>({x:(1-p.x)*w,y:p.y*h});ctx.lineWidth=2;ctx.strokeStyle='rgba(66,235,255,.85)';ctx.shadowColor='#35eaff';ctx.shadowBlur=9;for(const [a,b] of connections){const p=xy(points[a]),q=xy(points[b]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}ctx.shadowBlur=12;for(let i=0;i<points.length;i++){const p=xy(points[i]);ctx.beginPath();ctx.fillStyle=(i===4||i===8)?'#ffbd4a':'#a8faff';ctx.arc(p.x,p.y,(i===4||i===8)?4:2.6,0,Math.PI*2);ctx.fill();}ctx.shadowBlur=0;}
+function classify(lm){const palm=Math.max(.001,dist(lm[5],lm[17]));const pinch=dist(lm[4],lm[8])/palm;const index=lm[8].y<lm[6].y-.025;const middle=lm[12].y<lm[10].y-.025;const ring=lm[16].y<lm[14].y-.02;const pinky=lm[20].y<lm[18].y-.02;const pinchThreshold=pinchActive ? 0.48 : 0.34;let gesture='IDLE';if(pinch<pinchThreshold)gesture='PINCH';else if(index&&middle&&ring&&pinky)gesture='OPEN PALM';else if(!index&&!middle&&!ring&&!pinky)gesture='FIST';else if(index&&!middle&&!ring&&!pinky)gesture='POINT';return {gesture,pinch,palm};}
+function lockControls(message='CONTROL LOCKED'){
+  pinchActive=false;
+  $('trackingMeter').style.width='0%';
+  $('gestureHint').textContent=message;
+  $('objectState').textContent='SAFE HOLD';
+  $('objectState').style.color='var(--amber)';
+}
+function handleLandmarks(raw, metricText='PASS', source='HAND MODEL', controlAuthorized=false){
+  if(!Array.isArray(raw)||raw.length!==21){noHand();return;}
+  if(!smoothHand)smoothHand=raw.map(p=>({...p}));
+  else smoothHand=raw.map((p,i)=>({x:lerp(smoothHand[i].x,p.x,.48),y:lerp(smoothHand[i].y,p.y,.48),z:lerp(smoothHand[i].z||0,p.z||0,.48)}));
+  const lm=smoothHand;drawHand(lm);
+  const {gesture,pinch}=classify(lm);
+  $('pinchValue').textContent=pinch.toFixed(2);
+  $('confidence').textContent=metricText;
+  $('trackingMeter').style.width=controlAuthorized?'100%':'0%';
+  $('trackingState').textContent=controlAuthorized?'VERIFIED':'VISIBLE · LOCKED';
+  $('trackingState').className=controlAuthorized?'state-good':'state-warn';
+  const px=1-lm[9].x,py=lm[9].y;
+  $('handPosition').textContent=px.toFixed(2)+' / '+py.toFixed(2);
+  const hints={
+    'OPEN PALM':'OPEN HAND · TRACKING READY',
+    'PINCH':'PINCH ACTIVE · MOVE TO DRAG',
+    'POINT':'POINTING · AIMING',
+    'FIST':'FIST · HOLD POSITION',
+    'IDLE':'HAND DETECTED'
+  };
+  if(gesture!==currentGesture){setGesture(gesture);log('Gesture: '+gesture+' · '+source);}
+  if(!controlAuthorized){
+    lockControls(source+' · '+(gesture==='PINCH'?'PINCH DETECTED':'VISUAL TRACKING ONLY')+' · SAFE LOCK');
+    return;
+  }
+  const posX=(px-.5)*4.0,posY=(.5-py)*2.8;
+  if(gesture==='PINCH'){
+    if(!pinchActive||grabStartPalmWidth<=0){grabStartPalmWidth=palm;grabStartScale=scaleTarget;}
+    targetX=THREE.MathUtils.clamp(posX,-2.0,2.0);
+    targetY=THREE.MathUtils.clamp(posY,-1.3,1.3);
+    const angle=Math.atan2(lm[9].y-lm[0].y,lm[9].x-lm[0].x);
+    targetRot=THREE.MathUtils.clamp(-angle*.85,-1.3,1.3);
+    // Apparent palm width is only a relative near/far cue, not metric depth.
+    const palmScaleRatio=palm/Math.max(grabStartPalmWidth,.001);
+    if(Math.abs(palmScaleRatio-1)>.04)scaleTarget=THREE.MathUtils.clamp(grabStartScale*palmScaleRatio,.55,1.8);
+    $('objectState').textContent='GRABBED';$('objectState').style.color='var(--amber)';
+  }else{
+    $('objectState').textContent='TRACKED';$('objectState').style.color='var(--green)';
+    grabStartPalmWidth=0;
+  }
+  $('gestureHint').textContent=gesture==='PINCH'?'PINCH · MOVE TO DRAG / HAND DISTANCE TO SCALE':(hints[gesture]||hints.IDLE);
+  pinchActive=gesture==='PINCH';
+}
+
+function noHand(){drawHand(null);smoothHand=null;pinchActive=false;$('trackingMeter').style.width='0%';$('trackingState').textContent='SEARCHING';$('trackingState').className='state-warn';$('confidence').textContent='--';$('handPosition').textContent='-- / --';$('pinchValue').textContent='--';if(currentGesture!=='NO HAND')setGesture('NO HAND','MOVE ONE HAND INTO CAMERA VIEW');$('objectState').textContent='READY';$('objectState').style.color='var(--cyan)';}
+
+// ---------- Camera + MediaPipe ----------
+async function connectPythonBackend(){
+  fallbackRequested=false;backendReady=false;
+  const scheme=location.protocol==='https:'?'wss':'ws';
+  return new Promise((resolve)=>{
+    let settled=false;
+    const ws=new WebSocket(`${scheme}://${location.host}/ws/inference`);
+    backendSocket=ws;ws.northstarIntentionalClose=false;
+    const timer=setTimeout(()=>{if(!settled){settled=true;try{ws.close()}catch{}resolve(false);}},1800);
+    ws.onopen=()=>{if(settled)return;settled=true;clearTimeout(timer);lastBackendMessageAt=performance.now();backendActive=true;$('engineState').textContent='PYTHON DUAL-MODEL';$('engineState').className='state-good';log('Python inference link established');resolve(true);};
+    ws.onerror=()=>{backendReady=false;backendBusy=false;if(!settled){settled=true;clearTimeout(timer);backendActive=false;resolve(false);}};
+    ws.onclose=()=>{
+      backendActive=false;backendReady=false;backendBusy=false;
+      if(ws.northstarIntentionalClose===true)return;
+      if(running)activateBrowserFallback();else fallbackRequested=true;
+    };
+    ws.onmessage=(ev)=>{
+      lastBackendMessageAt=performance.now();
+      backendBusy=false;
+      let d;try{d=JSON.parse(ev.data)}catch{return;}
+      if(d.status==='ready'){
+        backendReady=true;lastBackendMessageAt=performance.now();
+        $('primaryModelState').textContent=d.primary_model||'UNKNOWN';
+        $('secondaryModelState').textContent=(d.secondary_model||'UNKNOWN')+' · '+(d.secondary_device||'CPU');
+        $('fusionState').textContent=d.secondary_model==='READY'?'DUAL CHECK READY':'SINGLE SOURCE';
+        if(d.primary_error)log('Primary model unavailable: '+d.primary_error.slice(0,110));
+        if(d.secondary_error)log('Secondary model unavailable: '+d.secondary_error.slice(0,110));
+        log('Inference stack initialized · '+(d.secondary_device||'CPU'));
+        if(d.primary_model!=='READY'&&d.secondary_model!=='READY'){
+          log('No Python hand model is available; switching to browser fallback');
+          fallbackRequested=true;backendActive=false;try{ws.close(1011,'No Python model available')}catch{}
+        }
+        return;
+      }
+      if(d.status==='error'&&!backendReady){
+        log('Python backend initialization failed: '+(d.message||'unknown error'));
+        fallbackRequested=true;backendActive=false;
+        try{ws.close(1011,'Python initialization failed')}catch{}
+        if(running)activateBrowserFallback();
+        return;
+      }
+      $('primaryModelState').textContent=d.primary_model||'--';
+      $('secondaryModelState').textContent=(d.secondary_model||'--')+' · '+(d.secondary_device||'CPU');
+      if(d.status==='verified'&&Array.isArray(d.landmarks)&&d.landmarks.length===21){
+        $('fusionState').textContent='CONSENSUS VERIFIED';$('fusionState').className='state-good';
+        const margin=Math.round(Number(d.agreement||0)*100);
+        handleLandmarks(d.landmarks,'PASS · '+margin+'% MARGIN','MEDIAPIPE + RTMPOSE-M',d.control_allowed===true);
+        $('trackingMode').textContent='DUAL · SAME FRAME';
+      }else if(d.status==='single_model'&&Array.isArray(d.landmarks)&&d.landmarks.length===21){
+        $('fusionState').textContent='SINGLE MODEL';$('fusionState').className='state-warn';
+        const score=Number(d.single_score||0);
+        const minSingleScore=d.single_source==='secondary' ? 0.55 : 0.65;
+        const authorized=singleModelOverride&&score>=minSingleScore;
+        handleLandmarks(d.landmarks,'SOURCE SCORE · '+Math.round(score*100)+'%',authorized?'SINGLE-MODEL OVERRIDE':'SINGLE MODEL',authorized);
+        $('trackingMode').textContent=authorized?'SINGLE · OVERRIDE':'SINGLE · LOCKED';
+      }else if(d.status==='disagreement'&&Array.isArray(d.landmarks)&&d.landmarks.length===21){
+        $('fusionState').textContent='DISAGREEMENT';$('fusionState').className='state-warn';
+        drawHand(d.landmarks);$('trackingState').textContent='MODEL MISMATCH';$('trackingState').className='state-warn';$('confidence').textContent='0%';
+        lockControls('MODELS DISAGREE · CONTROLS LOCKED');$('trackingMode').textContent='DUAL · MISMATCH';
+      }else if(d.status==='degraded'&&Array.isArray(d.landmarks)&&d.landmarks.length===21){
+        $('fusionState').textContent='FLOW ONLY';$('fusionState').className='state-warn';drawHand(d.landmarks);$('confidence').textContent='--';$('trackingState').textContent='DEGRADED';$('trackingState').className='state-warn';lockControls('OPTICAL FLOW · VISUAL ONLY');
+      }else if(d.status==='no_hand'||d.status==='invalid_frame'){noHand();$('fusionState').textContent='SEARCHING';$('fusionState').className='state-warn';}
+      if(d.fps){$('fps').textContent=Math.round(d.fps);}
+      if(d.engine){$('engineState').textContent=d.engine;}
+      if(d.status==='error'){log('Inference error: '+(d.message||'unknown'));$('trackingState').textContent='INFERENCE ERROR';$('trackingState').className='state-warn';$('fusionState').textContent='ERROR · SAFE LOCK';$('fusionState').className='state-warn';lockControls('INFERENCE ERROR · SAFE HOLD');}
+    };
+  });
+}
+function sendBackendFrame(now){
+  if(!backendActive||!backendReady||!backendSocket||backendSocket.readyState!==WebSocket.OPEN||backendBusy||now-lastBackendSend<40||video.readyState<2)return;
+  lastBackendSend=now;backendBusy=true;
+  const w=640,h=Math.max(1,Math.round(video.videoHeight*(w/video.videoWidth)));frameCanvas.width=w;frameCanvas.height=h;frameCtx.drawImage(video,0,0,w,h);
+  frameCanvas.toBlob(blob=>{
+    if(!blob||!backendSocket||backendSocket.readyState!==WebSocket.OPEN){backendBusy=false;return;}
+    blob.arrayBuffer().then(buf=>{try{backendSocket.send(buf);}catch{backendBusy=false;}}).catch(()=>{backendBusy=false;});
+  },'image/jpeg',0.72);
+}
+async function createLandmarker(){const {FilesetResolver,HandLandmarker}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');const base={modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'};try{return await HandLandmarker.createFromOptions(vision,{baseOptions:{...base,delegate:'GPU'},runningMode:'VIDEO',numHands:1,minHandDetectionConfidence:.55,minHandPresenceConfidence:.55,minTrackingConfidence:.5});}catch(gpuError){log('GPU delegate unavailable; switching to CPU');return await HandLandmarker.createFromOptions(vision,{baseOptions:{...base,delegate:'CPU'},runningMode:'VIDEO',numHands:1,minHandDetectionConfidence:.55,minHandPresenceConfidence:.55,minTrackingConfidence:.5});}}
+async function activateBrowserFallback(){
+  if(!running||landmarker||browserLoading)return;
+  browserLoading=true;$('engineState').textContent='BROWSER FAILOVER';$('engineState').className='state-warn';$('fusionState').textContent='SINGLE SOURCE';
+  $('modelState').textContent='LOADING BROWSER MODEL';log('Python model path unavailable; loading browser MediaPipe failover');
+  try{landmarker=await createLandmarker();if(running){$('primaryModelState').textContent='BROWSER READY';$('secondaryModelState').textContent='OFFLINE';$('fusionState').textContent='NO CONSENSUS';$('modelState').textContent='BROWSER FAILOVER READY';log('Browser MediaPipe failover online · single-source controls remain locked');}}
+  catch(e){log('Browser failover failed: '+e.message);noHand();}
+  finally{browserLoading=false;fallbackRequested=false;}
+}
+async function refreshCameraList(){
+  const select=$('cameraSelect');
+  if(!navigator.mediaDevices?.enumerateDevices)return;
+  try{
+    const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+    const previous=select.value;select.replaceChildren();
+    if(!devices.length){select.add(new Option('NO CAMERA DETECTED',''));select.disabled=true;return;}
+    devices.forEach((device,index)=>{const label=device.label||`CAMERA ${index+1}`;select.add(new Option(label,device.deviceId));});
+    if(previous&&devices.some(d=>d.deviceId===previous))select.value=previous;
+    select.disabled=false;
+  }catch(err){log('Camera enumeration failed: '+err.message);}
+}
+async function startCamera(){
+  if(running)return;const start=$('startBtn');start.disabled=true;start.querySelector('span').textContent='INITIALIZING CAMERA...';setSystemState('INITIALIZING');log('Requesting camera permission');
+  try{
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera API unavailable. Open on HTTPS or localhost.');
+    const selectedCamera=$('cameraSelect').value;
+    const videoConstraints={width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:60}};
+    if(selectedCamera)videoConstraints.deviceId={exact:selectedCamera};else videoConstraints.facingMode={ideal:'user'};
+    stream=await navigator.mediaDevices.getUserMedia({audio:false,video:videoConstraints});
+    video.srcObject=stream;await video.play();await refreshCameraList();
+    const activeTrack=stream.getVideoTracks()[0];const activeId=activeTrack?.getSettings?.().deviceId;if(activeId)$('cameraSelect').value=activeId;$('overrideBtn').disabled=false;$('cameraVideo').style.display='block';$('emptyState').classList.add('hidden');$('cameraState').textContent='CONNECTED';$('cameraState').className='state-good';$('cameraIcon').textContent='●';$('resolution').textContent=`INPUT: ${video.videoWidth} × ${video.videoHeight}`;$('viewMode').textContent='LIVE RGB CAMERA · MIRRORED';
+    start.querySelector('span').textContent='CONNECTING PYTHON ML...';
+    const py=await connectPythonBackend();
+    if(!py){
+      $('engineState').textContent='BROWSER MEDIAPIPE';$('engineState').className='state-warn';$('primaryModelState').textContent='LOADING';$('secondaryModelState').textContent='OFFLINE';$('fusionState').textContent='SINGLE SOURCE';
+      log('Python backend unavailable; browser model will run in locked single-source mode');landmarker=await createLandmarker();$('primaryModelState').textContent='BROWSER READY';
+    }
+    $('modelState').textContent=py?'PYTHON STACK':'BROWSER ONLY';$('modelState').className='state-good';running=true;lastVideoTime=-1;setSystemState('OPTICAL LINK ACTIVE',true);$('trackingMode').textContent=py?'DUAL / WAITING':'SINGLE / LOCKED';$('stopBtn').disabled=false;start.querySelector('span').textContent='● CAMERA ACTIVE';$('trackingState').textContent='SEARCHING';log(py?'Python dual-model stack connected':'Browser MediaPipe fallback active');toast('OPTICAL LINK ESTABLISHED');if(fallbackRequested&&!landmarker)activateBrowserFallback();loop();
+  }catch(err){
+    console.error(err);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}$('overrideBtn').disabled=true;video.srcObject=null;$('cameraVideo').style.display='none';setSystemState('LINK FAILED');$('cameraState').textContent='UNAVAILABLE';$('cameraState').className='state-warn';start.querySelector('span').textContent='▶ RETRY CAMERA';start.disabled=false;log('ERROR: '+(err.message||err.name));toast(err.message||'CAMERA INITIALIZATION FAILED');
+  }
+}
+function loop(){
+  if(!running)return;raf=requestAnimationFrame(loop);if(video.readyState<2)return;const now=performance.now();
+  if(backendActive&&!backendReady&&lastBackendMessageAt&&now-lastBackendMessageAt>120000){
+    log('Python model initialization exceeded 120 seconds · switching to browser fallback');
+    fallbackRequested=true;try{backendSocket?.close(1011,'Model initialization timeout')}catch{}
+  }
+  if(backendActive&&backendReady){
+    sendBackendFrame(now);
+    if(backendBusy&&now-lastBackendSend>750){
+      $('trackingState').textContent='INFERENCE TIMEOUT';$('trackingState').className='state-warn';
+      $('fusionState').textContent='STALE · SAFE LOCK';$('fusionState').className='state-warn';
+      lockControls('PYTHON INFERENCE TIMEOUT · SAFE LOCK');
+    }
+    if(now-lastBackendMessageAt>3000){
+      log('Python inference heartbeat lost · switching to browser fallback');
+      try{backendSocket?.close(1011,'Inference heartbeat timeout')}catch{}
+    }
+  }
+  else if(landmarker&&video.currentTime!==lastVideoTime){
+    lastVideoTime=video.currentTime;
+    try{const result=landmarker.detectForVideo(video,now);if(result.landmarks?.length){const score=result.handednesses?.[0]?.[0]?.score??0;const authorized=singleModelOverride&&score>=.72;handleLandmarks(result.landmarks[0],'HANDEDNESS SCORE · '+Math.round(score*100)+'%',authorized?'BROWSER OVERRIDE':'BROWSER MEDIAPIPE',authorized);$('fusionState').textContent='SINGLE SOURCE';$('fusionState').className='state-warn';$('trackingMode').textContent=authorized?'BROWSER · OVERRIDE':'BROWSER · LOCKED';}else noHand();}
+    catch(e){console.warn('Browser hand detection failed',e);noHand();}
+  }
+  fpsFrames++;if(now-fpsLast>=1000){if(!backendActive)$('fps').textContent=Math.round(fpsFrames*1000/(now-fpsLast));fpsFrames=0;fpsLast=now;}
+}
+function stopCamera(){
+  running=false;fallbackRequested=false;cancelAnimationFrame(raf);backendActive=false;backendReady=false;backendBusy=false;if(backendSocket){backendSocket.northstarIntentionalClose=true;try{backendSocket.close()}catch{}backendSocket=null;}
+  if(speech){try{speech.stop()}catch{}speech=null;$('voiceState').textContent='OFF';$('voiceBtn').classList.remove('mic-active');}
+  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;video.style.display='none';if(landmarker){landmarker.close();landmarker=null;}
+  ctx.clearRect(0,0,canvas.width,canvas.height);smoothHand=null;pinchActive=false;singleModelOverride=false;$('overrideBtn').disabled=true;$('overrideBtn').classList.remove('mic-active');$('overrideBtn').setAttribute('aria-pressed','false');$('overrideState').textContent='LOCKED';$('cameraState').textContent='NOT CONNECTED';$('cameraState').className='';$('cameraIcon').textContent='◉';$('primaryModelState').textContent='NOT LOADED';$('secondaryModelState').textContent='NOT LOADED';$('fusionState').textContent='STANDBY';$('engineState').textContent='LOCAL BACKEND';$('engineState').className='';$('trackingState').textContent='OFFLINE';$('trackingMeter').style.width='0%';$('emptyState').classList.remove('hidden');$('viewMode').textContent='SIMULATION VIEW · CAMERA OFF';$('resolution').textContent='INPUT: VIRTUAL';$('trackingMode').textContent='STANDBY';$('fps').textContent='--';$('confidence').textContent='--';$('handPosition').textContent='-- / --';$('pinchValue').textContent='--';setGesture('IDLE','SHOW ONE HAND TO CAMERA');setSystemState('SYSTEM STANDBY');$('stopBtn').disabled=true;$('startBtn').disabled=false;$('startBtn').querySelector('span').textContent='▶  INITIALIZE CAMERA';$('cameraSelect').disabled=false;$('objectState').textContent='READY';log('Camera disconnected');toast('OPTICAL LINK CLOSED');
+}
+$('startBtn').addEventListener('click',startCamera);$('stopBtn').addEventListener('click',stopCamera);
+$('cameraSelect').addEventListener('change',async()=>{
+  if(!running)return;
+  if(cameraSwitching)return;cameraSwitching=true;
+  log('Switching camera input...');toast('SWITCHING CAMERA SOURCE');
+  stopCamera();
+  try{await startCamera();}finally{cameraSwitching=false;}
+});
+if(navigator.mediaDevices?.addEventListener)navigator.mediaDevices.addEventListener('devicechange',refreshCameraList);
+refreshCameraList();
+$('overrideBtn').addEventListener('click',()=>{
+  if(!singleModelOverride&&!window.confirm('Single-model override is less reliable than dual-model agreement. Continue with reduced verification?'))return;
+  singleModelOverride=!singleModelOverride;
+  $('overrideBtn').setAttribute('aria-pressed',String(singleModelOverride));
+  $('overrideBtn').classList.toggle('mic-active',singleModelOverride);
+  $('overrideState').textContent=singleModelOverride?'ACTIVE':'LOCKED';
+  log(singleModelOverride?'WARNING: single-model control override enabled':'Single-model override disabled');
+  toast(singleModelOverride?'SINGLE MODEL OVERRIDE ACTIVE':'DUAL CONSENSUS POLICY RESTORED');
+});
+$('resetBtn').addEventListener('click',()=>{targetX=0;targetY=0;targetRot=0;scaleTarget=1;root.position.set(0,0,0);root.rotation.set(0,0,0);root.scale.setScalar(1);$('objectState').textContent='RECENTERED';log('Assembly recentered');toast('ASSEMBLY RECENTERED');});
+
+// Mouse/touch fallback keeps the hologram useful without a webcam.
+viewport.addEventListener('pointerdown',e=>{if(running||isConnectViewerActive())return;mouseDown=true;viewport.setPointerCapture?.(e.pointerId);});viewport.addEventListener('pointerup',()=>mouseDown=false);viewport.addEventListener('pointercancel',()=>mouseDown=false);viewport.addEventListener('pointermove',e=>{if(running||isConnectViewerActive()||!mouseDown)return;const r=viewport.getBoundingClientRect();targetX=((e.clientX-r.left)/r.width-.5)*4;targetY=(.5-(e.clientY-r.top)/r.height)*2.8;$('objectState').textContent='MOUSE CONTROL';});viewport.addEventListener('wheel',e=>{if(isConnectViewerActive())return;scaleTarget=THREE.MathUtils.clamp(scaleTarget+(e.deltaY<0?.06:-.06),.55,1.8);},{passive:true});
+window.addEventListener('keydown',e=>{if(e.code==='KeyR')$('resetBtn').click();if(e.code==='Space'){e.preventDefault();paused=!paused;toast(paused?'MOTION PAUSED':'MOTION RESUMED');}});
+
+// Optional browser speech recognition: a small fixed command set, not an AI assistant.
+$('voiceBtn').addEventListener('click',()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){toast('VOICE RECOGNITION NOT SUPPORTED IN THIS BROWSER');return;}if(speech){speech.stop();speech=null;$('voiceState').textContent='OFF';$('voiceBtn').classList.remove('mic-active');log('Voice link stopped');return;}speech=new SR();speech.lang='tr-TR';speech.continuous=true;speech.interimResults=false;speech.onresult=e=>{const text=e.results[e.results.length-1][0].transcript.toLowerCase();log('Voice: '+text);if(text.includes('sıfırla')||text.includes('reset'))$('resetBtn').click();else if(text.includes('dur')||text.includes('pause')){paused=true;toast('MOTION PAUSED');}else if(text.includes('devam')){paused=false;toast('MOTION RESUMED');}else if(text.includes('büyüt'))scaleTarget=THREE.MathUtils.clamp(scaleTarget+.15,.55,1.8);else if(text.includes('küçült'))scaleTarget=THREE.MathUtils.clamp(scaleTarget-.15,.55,1.8);else toast('COMMAND NOT RECOGNIZED');};speech.onerror=e=>{log('Voice error: '+e.error);};speech.onend=()=>{speech=null;$('voiceState').textContent='OFF';$('voiceBtn').classList.remove('mic-active');};try{speech.start();$('voiceState').textContent='ON';$('voiceBtn').classList.add('mic-active');log('Voice link active (Turkish)');toast('VOICE COMMAND LINK ACTIVE');}catch(e){speech=null;toast('VOICE LINK COULD NOT START');}});
+
+// Clock + deterministic startup diagnostics
+function tick(){const d=new Date();$('clock').textContent=d.toLocaleTimeString('en-GB',{hour12:false});}tick();setInterval(tick,1000);
+log('Three.js hologram renderer online');log('Single RGB camera pipeline ready');log('Dual-model consensus required for normal control');log('Awaiting user camera permission');
+window.addEventListener('beforeunload',()=>{disconnectReadOnlyViewer();running=false;if(stream)stream.getTracks().forEach(t=>t.stop());if(landmarker)landmarker.close();if(speech)try{speech.stop()}catch{}if(backendSocket){backendSocket.northstarIntentionalClose=true;backendSocket.close();}});
+</script>
+</body>
+</html>

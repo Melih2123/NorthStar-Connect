@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06111a">
+<title>NorthStar Connect · Paint Workspace</title>
+<style>
+:root{
+  color-scheme:dark;--bg:#06111a;--panel:#0b1d29;--line:#1d5265;
+  --cyan:#45e4fa;--text:#e4faff;--muted:#8eabb5;--good:#5bf0b7;
+  --warn:#ffbd59;--bad:#ff7777;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,sans-serif}
+body{overscroll-behavior:none}
+button,input{font:inherit}
+button{border:1px solid rgba(69,228,250,.28);background:linear-gradient(145deg,#123344,#0a1e2a);color:var(--text);border-radius:9px;padding:8px 12px;font-weight:750;font-size:10px;letter-spacing:.08em;cursor:pointer;white-space:nowrap;transition:.12s ease}
+button:hover{border-color:var(--cyan);background:#15475a}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.active{background:var(--cyan);border-color:#baf8ff;color:#03131a;box-shadow:0 0 18px #45e4fa40}
+button.danger{border-color:#9d4545;background:#351a20;color:#ffdfe2}
+.app{height:100dvh;width:100vw;display:flex;flex-direction:column;min-height:0;background:radial-gradient(ellipse at 50% 0,#103044 0,#07131d 42%,#04090e 100%);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.header{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 14px;border-bottom:1px solid rgba(69,228,250,.18);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand-mark{width:27px;height:27px;border:1px solid var(--cyan);display:grid;place-items:center;color:var(--cyan);font-size:18px;text-shadow:0 0 9px var(--cyan);transform:rotate(45deg);flex-shrink:0}
+.brand-mark span{transform:rotate(-45deg)}
+.brand-name{font-size:12px;font-weight:850;letter-spacing:.16em;color:#e8fcff;white-space:nowrap}
+.brand-sub{font-size:8px;color:#7698a4;letter-spacing:.13em;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:8px;min-width:0}
+.connection-pill{border:1px solid rgba(69,228,250,.2);padding:6px 9px;border-radius:99px;font-size:9px;color:var(--muted);white-space:nowrap}
+.lamp{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:6px}
+.lamp.on{background:var(--good);box-shadow:0 0 9px var(--good)}
+.lamp.off{background:var(--bad)}
+.connection-row{display:flex;align-items:center;gap:7px;padding:7px 12px;border-bottom:1px solid rgba(69,228,250,.14);flex-shrink:0;overflow-x:auto}
+.connection-row input{height:32px;min-width:0;border:1px solid rgba(69,228,250,.22);border-radius:7px;padding:0 9px;background:#06131b;color:var(--text);font-size:10px;outline:none}
+#server{flex:1 1 240px;min-width:140px}
+#room{flex:0 1 170px;width:170px;text-transform:uppercase;letter-spacing:.1em}
+.connection-row input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #45e4fa18}
+.toolstrip{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(69,228,250,.14);flex-shrink:0;min-height:68px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#236176 transparent}
+.toolgroup{display:flex;align-items:center;gap:5px;flex-shrink:0;padding-right:9px;border-right:1px solid rgba(69,228,250,.15)}
+.toolgroup:last-child{border-right:0;padding-right:0}
+.palette{display:flex;align-items:center;gap:5px}
+.swatch{width:26px;height:26px;min-width:26px;padding:0;border:2px solid rgba(220,250,255,.24);border-radius:50%;box-shadow:inset 0 0 0 1px #0005;position:relative}
+.swatch.selected{outline:2px solid var(--cyan);outline-offset:2px;border-color:#fff}
+.swatch.selected:after{content:"";position:absolute;inset:7px;border:1px solid #fff;border-radius:50%;mix-blend-mode:difference}
+.custom-color{width:34px;height:34px;border:1px solid rgba(69,228,250,.35);border-radius:8px;background:#06131b;padding:3px;cursor:pointer}
+.size-control{width:184px;min-width:184px;display:grid;gap:4px;padding:7px 10px;border:1px solid rgba(69,228,250,.24);border-radius:9px;background:linear-gradient(145deg,#102c3a,#071923)}
+.size-meta{display:flex;justify-content:space-between;align-items:center}
+.size-meta label{font-size:8px;color:#9fc4ce;font-weight:800;letter-spacing:.15em}
+#sizeValue{color:#70efff;font-size:10px;font-weight:850;font-variant-numeric:tabular-nums}
+#size{-webkit-appearance:none;appearance:none;width:100%;height:18px;padding:0;margin:0;background:transparent;cursor:pointer;touch-action:pan-y}
+#size::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:linear-gradient(90deg,#45e4fa 0%,#45e4fa var(--range-progress,10%),#294653 var(--range-progress,10%),#294653 100%)}
+#size::-moz-range-track{height:5px;border-radius:99px;background:#294653}
+#size::-moz-range-progress{height:5px;border-radius:99px;background:#45e4fa}
+#size::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-5.5px;border:2px solid #d4fbff;border-radius:50%;background:#087e96;box-shadow:0 0 0 4px #45e4fa20,0 0 12px #45e4fa80}
+#size::-moz-range-thumb{width:12px;height:12px;border:2px solid #d4fbff;border-radius:50%;background:#087e96;box-shadow:0 0 0 4px #45e4fa20,0 0 12px #45e4fa80}
+.tool-btn{padding:9px 11px}
+.canvas-stage{flex:1;min-height:0;position:relative;padding:7px 10px 9px;display:flex;overflow:hidden}
+.canvas-frame{position:relative;flex:1;min-height:0;min-width:0;overflow:hidden;background:#fff;border:1px solid rgba(69,228,250,.38);border-radius:8px;box-shadow:0 0 30px #21d9ed10;touch-action:none}
+#board{display:block;width:100%;height:100%;background:#fff;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+.canvas-hint{position:absolute;bottom:10px;right:12px;color:#78909a;background:#ffffffc9;border-radius:6px;padding:4px 7px;font-size:9px;pointer-events:none}
+.statusbar{height:25px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;color:#7899a4;font-size:9px;letter-spacing:.06em;white-space:nowrap;overflow:hidden}
+#status{overflow:hidden;text-overflow:ellipsis}
+#fullscreen.active{border-color:var(--good);color:var(--good)}
+
+.chat-panel{position:fixed;z-index:30;top:112px;right:12px;bottom:36px;width:min(360px,calc(100vw - 20px));display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(69,228,250,.42);border-radius:13px;background:linear-gradient(155deg,rgba(8,27,39,.98),rgba(3,12,19,.99));box-shadow:0 18px 55px #0009,0 0 25px #45e4fa15;backdrop-filter:blur(16px)}
+.chat-panel[hidden]{display:none!important}
+.chat-head{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid rgba(69,228,250,.18)}
+.chat-head b{display:block;color:var(--cyan);font-size:11px;letter-spacing:.16em}.chat-head small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+.chat-head button{padding:6px 9px}
+.chat-messages{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px}
+.chat-empty{color:var(--muted);font-size:11px;text-align:center;margin:auto;line-height:1.7}
+.chat-message{max-width:94%;align-self:flex-start;border:1px solid rgba(69,228,250,.13);background:#0d2634;border-radius:10px;padding:9px 10px;overflow-wrap:anywhere}
+.chat-message.self{align-self:flex-end;background:#103747;border-color:rgba(69,228,250,.28)}
+.chat-message-head{display:flex;align-items:center;gap:8px;color:var(--cyan);font-size:9px;font-weight:800;letter-spacing:.06em;margin-bottom:5px}
+.chat-message-head time{color:#7899a4;font-weight:500;margin-left:auto;font-size:8px}
+.chat-message-text{white-space:pre-wrap;color:#e1f2f6;font-size:12px;line-height:1.45}
+.chat-message img{display:block;max-width:100%;max-height:190px;object-fit:contain;margin-top:7px;border-radius:7px;background:#fff;cursor:zoom-in}
+.chat-compose{padding:10px;border-top:1px solid rgba(69,228,250,.18);background:#071722}
+.chat-attach-row{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:9px;margin-bottom:7px}
+.chat-attach-row button{padding:6px 9px}
+.chat-input-row{display:flex;align-items:stretch;gap:7px}
+.chat-input-row textarea{flex:1;min-width:0;resize:vertical;min-height:40px;max-height:110px;padding:9px;border:1px solid rgba(69,228,250,.25);border-radius:8px;background:#041019;color:var(--text);font:12px system-ui;outline:none}
+.chat-input-row textarea:focus{border-color:var(--cyan)}
+.chat-input-row button{align-self:stretch;white-space:normal;max-width:76px}
+.chat-image-preview{margin:6px 0;padding:6px;border:1px dashed rgba(69,228,250,.35);border-radius:8px;color:#a8cbd5;font-size:9px}
+.chat-image-preview img{max-width:100%;max-height:92px;display:block;margin-bottom:5px;border-radius:5px}
+@media(max-width:760px){.chat-panel{top:104px;right:6px;bottom:28px;width:min(360px,calc(100vw - 12px))}.header-right{gap:5px}.header-right .connection-pill{padding:5px 7px;font-size:8px}.header-right button{padding:7px 8px;font-size:8px}}
+
+@media(max-width:760px){
+  .header{min-height:44px;padding:4px 9px}
+  .brand-sub{display:none}
+  .brand-name{font-size:10px}
+  .connection-row{padding:6px 8px;gap:5px}
+  #server{flex-basis:145px;min-width:120px}
+  #room{flex-basis:115px;width:115px}
+  .connection-row button{padding:8px 9px;font-size:9px}
+  .toolstrip{min-height:64px;padding:7px 8px;gap:7px}
+  .toolgroup{gap:4px;padding-right:7px}
+  .swatch{width:24px;height:24px;min-width:24px}
+  .size-control{width:145px;min-width:145px;padding:6px 8px}
+  .tool-btn{padding:8px 9px;font-size:9px}
+  .canvas-stage{padding:4px}
+  .statusbar{height:22px;padding:0 8px;font-size:8px}
+}
+@media(max-height:620px){
+  .header{min-height:38px}
+  .connection-row{padding:4px 8px}
+  .toolstrip{min-height:54px;padding:4px 8px}
+  .canvas-stage{padding:4px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark"><span>✳</span></div>
+      <div><div class="brand-name">NORTHSTAR CONNECT</div><div class="brand-sub">REALTIME SHARED PAINT WORKSPACE</div></div>
+    </div>
+    <div class="header-right">
+      <div class="connection-pill"><span id="lamp" class="lamp"></span><span id="connection">BAĞLANTI YOK</span> · <b id="participants">0</b> kişi</div>
+      <button id="chatToggle" class="tool-btn" aria-expanded="false">CHAT <span id="chatUnread"></span></button>
+      <button id="fullscreen" class="tool-btn" title="Tam ekran">⛶ TAM EKRAN</button>
+    </div>
+  </header>
+
+  <section class="connection-row" aria-label="Oda bağlantısı">
+    <input id="server" value="http://127.0.0.1:8000" aria-label="Sunucu adresi" placeholder="https://sunucu-adresi">
+    <input id="room" maxlength="12" aria-label="Oda kodu" placeholder="ODA KODU">
+    <button id="create">ODA OLUŞTUR</button>
+    <button id="connect">KATIL</button>
+  </section>
+
+  <nav class="toolstrip" aria-label="Paint araçları">
+    <div class="toolgroup palette" id="palette" aria-label="Renk paleti">
+      <button class="swatch selected" data-color="#111827" style="background:#111827" title="Siyah" aria-label="Siyah"></button>
+      <button class="swatch" data-color="#FFFFFF" style="background:#FFFFFF" title="Beyaz" aria-label="Beyaz"></button>
+      <button class="swatch" data-color="#EF4444" style="background:#EF4444" title="Kırmızı" aria-label="Kırmızı"></button>
+      <button class="swatch" data-color="#F97316" style="background:#F97316" title="Turuncu" aria-label="Turuncu"></button>
+      <button class="swatch" data-color="#F59E0B" style="background:#F59E0B" title="Sarı" aria-label="Sarı"></button>
+      <button class="swatch" data-color="#84CC16" style="background:#84CC16" title="Açık yeşil" aria-label="Açık yeşil"></button>
+      <button class="swatch" data-color="#22C55E" style="background:#22C55E" title="Yeşil" aria-label="Yeşil"></button>
+      <button class="swatch" data-color="#14B8A6" style="background:#14B8A6" title="Turkuaz" aria-label="Turkuaz"></button>
+      <button class="swatch" data-color="#06B6D4" style="background:#06B6D4" title="Camgöbeği" aria-label="Camgöbeği"></button>
+      <button class="swatch" data-color="#3B82F6" style="background:#3B82F6" title="Mavi" aria-label="Mavi"></button>
+      <button class="swatch" data-color="#6366F1" style="background:#6366F1" title="İndigo" aria-label="İndigo"></button>
+      <button class="swatch" data-color="#A855F7" style="background:#A855F7" title="Mor" aria-label="Mor"></button>
+      <button class="swatch" data-color="#EC4899" style="background:#EC4899" title="Pembe" aria-label="Pembe"></button>
+      <button class="swatch" data-color="#92400E" style="background:#92400E" title="Kahverengi" aria-label="Kahverengi"></button>
+      <button class="swatch" data-color="#64748B" style="background:#64748B" title="Gri" aria-label="Gri"></button>
+    </div>
+    <div class="toolgroup">
+      <label class="custom-wrap" title="Özel renk seç"><input type="color" class="custom-color" id="color" value="#111827" aria-label="Özel renk"></label>
+    </div>
+    <div class="toolgroup">
+      <div class="size-control">
+        <div class="size-meta"><label for="size">FIRÇA BOYUTU</label><output id="sizeValue">8 PX</output></div>
+        <input type="range" id="size" min="1" max="64" value="8" step="1" aria-label="Fırça boyutu">
+      </div>
+    </div>
+    <div class="toolgroup">
+      <button id="pen" class="tool-btn active">✎ KALEM</button>
+      <button id="marker" class="tool-btn">▰ FOSFORLU</button>
+      <button id="eraser" class="tool-btn">▱ SİLGİ</button>
+    </div>
+    <div class="toolgroup">
+      <button id="addImage" class="tool-btn">▧ FOTO EKLE</button>
+      <button id="imageSelect" class="tool-btn">▣ FOTO SEÇ / TAŞI</button>
+      <button id="imageDelete" class="tool-btn danger">FOTO SİL</button>
+      <input id="imagePicker" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+      <button id="undo" class="tool-btn">↶ GERİ AL</button>
+      <button id="redo" class="tool-btn">↷ YİNELE</button>
+      <button id="clear" class="tool-btn danger">TUVALİ TEMİZLE</button>
+    </div>
+  </nav>
+
+  <aside class="chat-panel" id="chatPanel" aria-label="Oda sohbeti" hidden>
+    <div class="chat-head"><div><b>ROOM CHAT</b><small id="chatRoomLabel">Odaya bağlanmayı bekliyor</small></div><button id="chatClose" aria-label="Sohbeti kapat">✕</button></div>
+    <div class="chat-messages" id="chatMessages" aria-live="polite"><div class="chat-empty">Odaya bağlanınca mesajlar burada görünür.</div></div>
+    <div class="chat-compose">
+      <div class="chat-attach-row"><span id="chatAttachmentName">Metin veya fotoğraf gönder</span><button id="chatAttach" type="button">＋ FOTO</button><input id="chatImagePicker" type="file" accept="image/png,image/jpeg,image/webp" hidden></div>
+      <div id="chatImagePreview" class="chat-image-preview" hidden></div>
+      <div class="chat-input-row"><textarea id="chatText" rows="2" maxlength="2000" placeholder="Odaya mesaj yaz... (fotoğrafı buraya yapıştırabilirsin)"></textarea><button id="chatSend">GÖNDER</button></div>
+    </div>
+  </aside>
+
+  <main class="canvas-stage">
+    <div class="canvas-frame" id="canvasFrame">
+      <canvas id="board" aria-label="Herkesin birlikte düzenlediği ortak tuval"></canvas>
+      <div class="canvas-hint">ORTAK TUVAL · TÜM KATILIMCILAR CANLI DÜZENLER</div>
+    </div>
+  </main>
+  <footer class="statusbar">
+    <span id="status">Sunucu adresini girip oda oluştur veya mevcut odaya katıl.</span>
+    <span>PAINT MODE · SHARED SESSION</span>
+  </footer>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+if (location.protocol !== 'file:') $('server').value = location.origin;
+try { const saved=JSON.parse(localStorage.getItem('northstar-connect-last-room')||'{}'); if(saved.server) $('server').value=saved.server; if(saved.room) $('room').value=saved.room; } catch(_) {}
+const canvas = $('board'), ctx = canvas.getContext('2d');
+function getStableClientId(){
+  try{
+    let id=sessionStorage.getItem('northstar-connect-device-id');
+    if(!id){id=crypto.randomUUID?crypto.randomUUID():'web-'+Math.random().toString(36).slice(2);sessionStorage.setItem('northstar-connect-device-id',id);}
+    return id;
+  }catch(_){return crypto.randomUUID?crypto.randomUUID():'web-'+Math.random().toString(36).slice(2);}
+}
+const clientId=getStableClientId();
+let socket=null,active=null,pending=[],pendingTimer=null,reconnectTimer=null,reconnectAttempt=0;
+let tool='pen',imageEditMode=false,selectedImageId=null,imageDrag=null,strokes=new Map(),order=[],ownStrokeIds=[],seen=new Set(),deletedStrokes=new Map(),redoStrokeIds=[];
+const sharedImages=new Map();
+let pendingChatImage=null,chatUnreadCount=0;
+const status=text=>$('status').textContent=text;
+const baseUrl=()=>$('server').value.trim().replace(/\/+$/,'');
+const roomCode=()=>$('room').value.trim().toUpperCase();
+const setConnection=(state,text)=>{$('lamp').className='lamp '+state;$('connection').textContent=text;};
+function wsUrl(){const u=new URL(baseUrl());u.protocol=u.protocol==='https:'?'wss:':'ws:';u.pathname='/ws/rooms/'+encodeURIComponent(roomCode());u.searchParams.set('device_id',clientId);return u.toString();}
+function blank(){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.restore();}
+function drawStroke(s){
+  if(!s||!s.points.length)return;
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=s.width*canvas.width;
+  ctx.globalCompositeOperation=s.tool==='eraser'?'destination-out':'source-over';
+  ctx.globalAlpha=s.tool==='marker'?0.34:1;ctx.strokeStyle=s.color;
+  const first=s.points[0],x=first[0]*canvas.width,y=first[1]*canvas.height;
+  ctx.beginPath();ctx.moveTo(x,y);
+  if(s.points.length===1){ctx.arc(x,y,Math.max(0.5,ctx.lineWidth/2),0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();}
+  else{for(let i=1;i<s.points.length;i++)ctx.lineTo(s.points[i][0]*canvas.width,s.points[i][1]*canvas.height);ctx.stroke();}
+  ctx.restore();
+}
+function redraw(){blank();for(const id of order)drawStroke(strokes.get(id));for(const image of sharedImages.values()){if(image.complete&&image.naturalWidth){const x=image.meta.x*canvas.width,y=image.meta.y*canvas.height,w=image.meta.width*canvas.width,h=image.meta.height*canvas.height;ctx.drawImage(image,x,y,w,h);if(String(image.meta.image_id)===String(selectedImageId)){ctx.save();ctx.strokeStyle='#00a9c7';ctx.lineWidth=Math.max(2,canvas.width/700);ctx.setLineDash([8,5]);ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);ctx.fillStyle='#00a9c7';ctx.fillRect(x+w-10,y+h-10,10,10);ctx.restore();}}}}
+function resizeCanvas(){
+  const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const width=Math.max(1,Math.round(rect.width*dpr)),height=Math.max(1,Math.round(rect.height*dpr));
+  if(canvas.width===width&&canvas.height===height)return;
+  canvas.width=width;canvas.height=height;redraw();
+}
+const resizeObserver=new ResizeObserver(resizeCanvas);resizeObserver.observe(canvas);
+window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas,100));
+function loadSharedImage(payload){
+  const key=String(payload.image_id);if(sharedImages.has(key))return;
+  const image=new Image();image.meta={image_id:Number(payload.image_id),x:Number(payload.x)||0.2,y:Number(payload.y)||0.2,width:Number(payload.width)||0.35,height:Number(payload.height)||0.35};
+  image.onload=redraw;image.onerror=()=>status('Paylaşılan fotoğraf yüklenemedi.');
+  image.src=baseUrl()+(payload.image_url||payload.image_path||'');sharedImages.set(key,image);
+}
+async function uploadRoomImage(file){
+  if(!file||!file.type.startsWith('image/'))throw new Error('Lütfen bir fotoğraf seç.');
+  if(file.size>5*1024*1024)throw new Error('Fotoğraf en fazla 5 MB olabilir.');
+  const form=new FormData();form.append('file',file,file.name||'northstar-image.png');form.append('device_id',clientId);
+  const result=await api('/api/rooms/'+encodeURIComponent(roomCode())+'/drawings',{method:'POST',body:form});
+  return result;
+}
+async function pasteImageToCanvas(file){
+  if(!socket||socket.readyState!==WebSocket.OPEN){status('Fotoğraf eklemek için önce odaya katıl.');return;}
+  try{
+    status('Fotoğraf ortak tuvale yükleniyor...');
+    const uploaded=await uploadRoomImage(file);
+    const preview=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=URL.createObjectURL(file);});
+    const aspect=preview.naturalWidth/Math.max(1,preview.naturalHeight);URL.revokeObjectURL(preview.src);
+    let width=0.42,height=width/aspect;if(height>0.52){height=0.52;width=height*aspect;}
+    width=Math.min(width,0.7);height=Math.min(height,0.7);
+    const payload={image_id:uploaded.id,x:(1-width)/2,y:(1-height)/2,width,height};
+    loadSharedImage({...payload,image_url:uploaded.image_path});
+    send('image_add',null,payload);status('Fotoğraf ortak tuvale eklendi.');
+  }catch(e){status('Fotoğraf eklenemedi: '+e.message);}
+}
+function applyEvent(ev){
+  if(ev.event_id&&seen.has(ev.event_id))return;
+  if(ev.event_id)seen.add(ev.event_id);
+  const p=ev.payload||{};
+  if(ev.type==='clear'){
+    strokes.clear();order=[];ownStrokeIds=[];deletedStrokes.clear();redoStrokeIds=[];sharedImages.clear();
+    active=null;pending=[];if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null;}redraw();return;
+  }
+  if(ev.type==='stroke_begin'){
+    const s={id:ev.stroke_id,color:p.color||'#111827',width:Number(p.width)||.006,tool:p.tool||'pen',points:p.point?[[p.point[0],p.point[1]]]:[],owner:ev.device_id};
+    if(!strokes.has(s.id)){strokes.set(s.id,s);order.push(s.id);if(s.owner===clientId)ownStrokeIds.push(s.id);}
+    redoStrokeIds=[];
+  }else if(ev.type==='stroke_points'){
+    const s=strokes.get(ev.stroke_id);if(s&&Array.isArray(p.points))s.points.push(...p.points);
+  }else if(ev.type==='stroke_delete'){
+    const id=p.target_stroke_id,s=strokes.get(id);
+    if(s){deletedStrokes.set(id,s);strokes.delete(id);order=order.filter(x=>x!==id);}
+    ownStrokeIds=ownStrokeIds.filter(x=>x!==id);
+    if(s&&s.owner===clientId&&!redoStrokeIds.includes(id))redoStrokeIds.push(id);
+  }else if(ev.type==='stroke_restore'){
+    const id=p.target_stroke_id,s=deletedStrokes.get(id);
+    if(s){strokes.set(id,s);order.push(id);deletedStrokes.delete(id);if(s.owner===clientId&&!ownStrokeIds.includes(id))ownStrokeIds.push(id);}
+    redoStrokeIds=redoStrokeIds.filter(x=>x!==id);
+  }else if(ev.type==='image_add'){
+    loadSharedImage(p);
+  }else if(ev.type==='image_update'){
+    const image=sharedImages.get(String(p.image_id));if(image){Object.assign(image.meta,{x:p.x,y:p.y,width:p.width,height:p.height});}
+  }else if(ev.type==='image_delete'){
+    sharedImages.delete(String(p.image_id));if(String(selectedImageId)===String(p.image_id))selectedImageId=null;
+  }
+  redraw();
+}
+function handleServerMessage(msg){
+  if(msg.type==='history'){
+    strokes.clear();order=[];ownStrokeIds=[];seen.clear();deletedStrokes.clear();redoStrokeIds=[];sharedImages.clear();active=null;pending=[];
+    if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null;}
+    for(const ev of msg.events||[])applyEvent(ev);
+    renderChatHistory(msg.messages||[]);
+    status('Ortak tuval ve oda sohbeti yüklendi.');
+  }else if(msg.type==='event'){
+    const ev=msg.event;if(ev.device_id===clientId)return;applyEvent(ev);
+  }else if(msg.type==='chat_message'){
+    appendChatMessage(msg.message);
+  }else if(msg.type==='presence'){
+    $('participants').textContent=msg.participants;
+  }else if(msg.type==='error')status('Sunucu: '+msg.message);
+}
+function send(type,strokeId=null,payload={}){
+  if(!socket||socket.readyState!==WebSocket.OPEN){status('Bağlantı kesik. Yeniden bağlanmayı dene.');return false;}
+  socket.send(JSON.stringify({type,stroke_id:strokeId,payload}));return true;
+}
+function connect(){
+  if(!baseUrl()||!roomCode()){status('Sunucu adresi ve oda kodu gerekli.');return;}
+  try{localStorage.setItem('northstar-connect-last-room',JSON.stringify({server:baseUrl(),room:roomCode()}));}catch(_){}
+  if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+  if(socket){socket.onclose=null;socket.close();}
+  setConnection('','BAĞLANIYOR');status('Ortak tuvale bağlanılıyor...');
+  let ws;try{ws=new WebSocket(wsUrl());socket=ws;}catch(e){setConnection('off','HATA');status('WebSocket adresi hatalı: '+e.message);return;}
+  ws.onopen=()=>{reconnectAttempt=0;setConnection('on','CANLI');status('Bağlandı. Odadaki herkes aynı tuvali eşzamanlı düzenleyebilir.');};
+  ws.onmessage=e=>{try{handleServerMessage(JSON.parse(e.data));}catch(err){console.error(err);}};
+  ws.onerror=()=>{setConnection('off','HATA');status('WebSocket bağlantısı kesildi. Yeniden bağlanılacak.');};
+  ws.onclose=()=>{if(socket!==ws)return;setConnection('off','YENİDEN BAĞLANIYOR');$('participants').textContent='0';const delay=Math.min(30000,1000*(2**Math.min(reconnectAttempt,5)));reconnectAttempt++;reconnectTimer=setTimeout(connect,delay);};
+}
+async function api(path,opts={}){const r=await fetch(baseUrl()+path,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));return d;}
+$('create').onclick=async()=>{try{const d=await api('/api/rooms',{method:'POST'});$('room').value=d.room_code;connect();}catch(e){status('Oda oluşturulamadı: '+e.message);}};
+$('connect').onclick=async()=>{try{await api('/api/rooms/'+encodeURIComponent(roomCode()));connect();}catch(e){status('Odaya katılınamadı: '+e.message);}};
+if(roomCode() && baseUrl()){setTimeout(()=>$('connect').click(),250);}
+function updateColor(color){
+  $('color').value=color;
+  document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('selected',b.dataset.color.toUpperCase()===color.toUpperCase()));
+}
+$('palette').addEventListener('click',e=>{
+  const b=e.target.closest('.swatch');if(!b)return;
+  updateColor(b.dataset.color);setTool('pen');
+});
+$('color').addEventListener('input',e=>{updateColor(e.target.value);setTool('pen');});
+function setTool(next){
+  tool=next;
+  $('pen').classList.toggle('active',tool==='pen');
+  $('marker').classList.toggle('active',tool==='marker');
+  $('eraser').classList.toggle('active',tool==='eraser');
+  canvas.style.cursor=tool==='eraser'?'cell':'crosshair';
+}
+$('pen').onclick=()=>setTool('pen');
+$('marker').onclick=()=>setTool('marker');
+$('eraser').onclick=()=>setTool('eraser');
+function localBegin(point){
+  const rect=canvas.getBoundingClientRect();
+  const id=crypto.randomUUID?crypto.randomUUID():clientId+'-'+Date.now()+'-'+Math.random();
+  active={id,points:[point],color:$('color').value.toUpperCase(),width:Number($('size').value)/Math.max(1,rect.width),tool,owner:clientId};
+  strokes.set(id,active);order.push(id);ownStrokeIds.push(id);redoStrokeIds=[];drawStroke(active);
+  send('stroke_begin',id,{point,color:active.color,width:active.width,tool:active.tool});
+}
+function flushPoints(){if(!active||!pending.length)return;const points=pending.splice(0,64);send('stroke_points',active.id,{points});}
+function scheduleFlush(){if(pending.length>=6){flushPoints();return;}if(!pendingTimer)pendingTimer=setTimeout(()=>{pendingTimer=null;flushPoints();},28);}
+function localMove(point){if(!active)return;active.points.push(point);pending.push(point);drawStroke({...active,points:[active.points[active.points.length-2],point]});scheduleFlush();}
+function finishStroke(){if(!active)return;if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null;}flushPoints();send('stroke_end',active.id,{});active=null;}
+function getPoint(e){const r=canvas.getBoundingClientRect();return[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];}
+function imageAt(point){
+  const entries=Array.from(sharedImages.entries()).reverse();
+  for(const [id,img] of entries){const m=img.meta;if(point[0]>=m.x&&point[0]<=m.x+m.width&&point[1]>=m.y&&point[1]<=m.y+m.height)return [id,img];}
+  return null;
+}
+$('imageSelect').onclick=()=>{imageEditMode=!imageEditMode;$('imageSelect').classList.toggle('active',imageEditMode);setTool('pen');status(imageEditMode?'Fotoğraf seçme açık: fotoğrafa tıkla, sürükle; Shift+sürükle ile boyutlandır.':'Fotoğraf düzenleme kapalı.');};
+$('imageDelete').onclick=()=>{if(selectedImageId===null)return status('Önce bir fotoğraf seç.');const id=Number(selectedImageId);sharedImages.delete(String(id));selectedImageId=null;redraw();send('image_delete',null,{image_id:id});};
+canvas.addEventListener('pointerdown',e=>{
+  if(!socket||socket.readyState!==WebSocket.OPEN){status('Önce odaya katıl.');return;}
+  if(imageEditMode){e.preventDefault();const point=getPoint(e),hit=imageAt(point);if(!hit){selectedImageId=null;redraw();return;}selectedImageId=hit[0];imageDrag={id:Number(hit[0]),start:point,meta:{...hit[1].meta},resize:e.shiftKey};canvas.setPointerCapture(e.pointerId);redraw();return;}
+
+  e.preventDefault();canvas.setPointerCapture(e.pointerId);pending=[];localBegin(getPoint(e));
+});
+canvas.addEventListener('pointermove',e=>{
+  if(imageDrag&&(e.buttons||e.pointerType==='touch')){e.preventDefault();const point=getPoint(e),dx=point[0]-imageDrag.start[0],dy=point[1]-imageDrag.start[1],m=imageDrag.meta,img=sharedImages.get(String(imageDrag.id));if(!img)return;
+    if(imageDrag.resize){img.meta.width=Math.max(.02,Math.min(1-m.x,m.width+dx));img.meta.height=Math.max(.02,Math.min(1-m.y,m.height+dy));}
+    else{img.meta.x=Math.max(0,Math.min(1-m.width,m.x+dx));img.meta.y=Math.max(0,Math.min(1-m.height,m.y+dy));}
+    imageDrag.start=point;imageDrag.meta={...img.meta};redraw();return;
+  }
+  if(active&&(e.buttons||e.pointerType==='touch')){e.preventDefault();localMove(getPoint(e));}
+});
+function finishImageDrag(){if(!imageDrag)return;const img=sharedImages.get(String(imageDrag.id));if(img)send('image_update',null,{image_id:imageDrag.id,x:img.meta.x,y:img.meta.y,width:img.meta.width,height:img.meta.height});imageDrag=null;}
+canvas.addEventListener('pointerup',()=>{if(imageDrag)finishImageDrag();else finishStroke();});canvas.addEventListener('pointercancel',()=>{if(imageDrag)finishImageDrag();else finishStroke();});
+const sizeInput=$('size');
+function updateBrushSizeUI(){
+  const min=Number(sizeInput.min)||1,max=Number(sizeInput.max)||64,value=Number(sizeInput.value)||min;
+  sizeInput.style.setProperty('--range-progress',((value-min)/(max-min))*100+'%');
+  $('sizeValue').textContent=value+' PX';sizeInput.setAttribute('aria-valuetext',value+' piksel');
+}
+sizeInput.addEventListener('input',updateBrushSizeUI);updateBrushSizeUI();
+$('undo').onclick=()=>{
+  const id=ownStrokeIds.pop();if(!id){status('Geri alınacak kendi çizgin yok.');return;}
+  const stroke=strokes.get(id);if(stroke)deletedStrokes.set(id,stroke);
+  strokes.delete(id);order=order.filter(x=>x!==id);redoStrokeIds.push(id);redraw();send('stroke_delete',null,{target_stroke_id:id});
+};
+$('redo').onclick=()=>{
+  const id=redoStrokeIds.pop();if(!id){status('Yinelenecek çizgin yok.');return;}
+  const stroke=deletedStrokes.get(id);if(!stroke){status('Çizgi geçmişte bulunamadı.');return;}
+  strokes.set(id,stroke);order.push(id);deletedStrokes.delete(id);ownStrokeIds.push(id);redraw();send('stroke_restore',null,{target_stroke_id:id});
+};
+$('clear').onclick=()=>{
+  if(!confirm('Ortak tuval herkes için temizlensin mi?'))return;
+  strokes.clear();order=[];ownStrokeIds=[];deletedStrokes.clear();redoStrokeIds=[];active=null;pending=[];
+  if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null;}redraw();send('clear');
+};
+$('fullscreen').onclick=async()=>{
+  try{
+    if(!document.fullscreenElement)await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  }catch(e){status('Tam ekran modu bu tarayıcıda açılamadı: '+e.message);}
+};
+document.addEventListener('fullscreenchange',()=>{$('fullscreen').classList.toggle('active',!!document.fullscreenElement);setTimeout(resizeCanvas,100);});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();$('undo').click();}
+  else if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();$('redo').click();}
+  else if(e.key.toLowerCase()==='b'&&document.activeElement.tagName!=='INPUT')setTool('pen');
+  else if(e.key.toLowerCase()==='e'&&document.activeElement.tagName!=='INPUT')setTool('eraser');
+});
+// ---------- Room chat and clipboard image sharing ----------
+const chatPanel=$('chatPanel'),chatMessages=$('chatMessages'),chatText=$('chatText');
+function setChatOpen(open){chatPanel.hidden=!open;$('chatToggle').setAttribute('aria-expanded',String(open));if(open){chatUnreadCount=0;$('chatUnread').textContent='';chatMessages.scrollTop=chatMessages.scrollHeight;chatText.focus();}}
+$('chatToggle').onclick=()=>setChatOpen(chatPanel.hidden);$('chatClose').onclick=()=>setChatOpen(false);
+function addChatNode(message){
+  const empty=chatMessages.querySelector('.chat-empty');if(empty)empty.remove();
+  const node=document.createElement('article');node.className='chat-message'+(message.device_id===clientId?' self':'');
+  const head=document.createElement('div');head.className='chat-message-head';
+  const sender=document.createElement('span');sender.textContent=message.sender||'ROOM MEMBER';
+  const time=document.createElement('time');time.textContent=message.created_at?new Date(message.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'ŞİMDİ';head.append(sender,time);node.append(head);
+  if(message.text){const text=document.createElement('div');text.className='chat-message-text';text.textContent=message.text;node.append(text);}
+  if(message.attachment_url){const img=document.createElement('img');img.src=baseUrl()+message.attachment_url;img.alt='Sohbette paylaşılan fotoğraf';img.loading='lazy';img.onclick=()=>window.open(img.src,'_blank','noopener');node.append(img);}
+  chatMessages.append(node);chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+function appendChatMessage(message){if(!message)return;addChatNode(message);if(chatPanel.hidden&&message.device_id!==clientId){chatUnreadCount++;$('chatUnread').textContent='+'+chatUnreadCount;}}
+function renderChatHistory(messages){chatMessages.replaceChildren();for(const message of messages||[])addChatNode(message);if(!chatMessages.childElementCount){const empty=document.createElement('div');empty.className='chat-empty';empty.textContent='Henüz mesaj yok. Odaya ilk mesajı sen gönder.';chatMessages.append(empty);}}
+function showChatImagePreview(file){pendingChatImage=file;$('chatAttachmentName').textContent=file.name||'Yapıştırılan fotoğraf';const preview=$('chatImagePreview');preview.hidden=false;preview.replaceChildren();const image=document.createElement('img');image.src=URL.createObjectURL(file);image.onload=()=>URL.revokeObjectURL(image.src);const label=document.createElement('span');label.textContent=(file.name||'Fotoğraf')+' · '+Math.ceil(file.size/1024)+' KB';const remove=document.createElement('button');remove.textContent='KALDIR';remove.onclick=clearChatImage;preview.append(image,label,remove);}
+function clearChatImage(){$('chatImagePreview').hidden=true;$('chatImagePreview').replaceChildren();$('chatAttachmentName').textContent='Metin veya fotoğraf gönder';pendingChatImage=null;}
+$('chatAttach').onclick=()=>$('chatImagePicker').click();
+$('chatImagePicker').onchange=e=>{const file=e.target.files?.[0];if(file)showChatImagePreview(file);e.target.value='';};
+$('addImage').onclick=()=>$('imagePicker').click();
+$('imagePicker').onchange=e=>{const file=e.target.files?.[0];if(file)pasteImageToCanvas(file);e.target.value='';};
+$('chatSend').onclick=async()=>{
+  const text=chatText.value.trim();if(!text&&!pendingChatImage)return;
+  if(!socket||socket.readyState!==WebSocket.OPEN){status('Mesaj göndermek için odaya bağlan.');return;}
+  try{let attachmentId=null;if(pendingChatImage){const uploaded=await uploadRoomImage(pendingChatImage);attachmentId=uploaded.id;}
+    send('chat_message',null,{sender:'Web / PC',text,attachment_id:attachmentId});chatText.value='';clearChatImage();
+  }catch(e){status('Mesaj gönderilemedi: '+e.message);}
+};
+chatText.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('chatSend').click();}});
+document.addEventListener('paste',e=>{
+  const items=Array.from(e.clipboardData?.items||[]);const item=items.find(x=>x.type.startsWith('image/'));if(!item)return;
+  const file=item.getAsFile();if(!file)return;
+  if(document.activeElement===chatText){e.preventDefault();showChatImagePreview(file);}
+  else{e.preventDefault();pasteImageToCanvas(file);}
+});
+canvas.addEventListener('dragover',e=>{e.preventDefault();});
+canvas.addEventListener('drop',e=>{e.preventDefault();const file=Array.from(e.dataTransfer?.files||[]).find(f=>f.type.startsWith('image/'));if(file)pasteImageToCanvas(file);});
+blank();resizeCanvas();
+window.addEventListener('beforeunload' ,()=>{if(reconnectTimer)clearTimeout(reconnectTimer);if(socket){socket.onclose=null;socket.close();}});
+</script>
+</body>
+</html>

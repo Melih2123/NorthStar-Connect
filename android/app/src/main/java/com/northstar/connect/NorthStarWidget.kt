@@ -1,15 +1,21 @@
 package com.northstar.connect
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.action.clickable
+import androidx.glance.action.actionStartActivity
 import androidx.glance.layout.Column
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
@@ -18,16 +24,31 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.io.File
 
 class NorthStarWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // First milestone: a local demo message. Remote sync comes later.
+        val prefs = SyncConfig.prefs(context)
+        val imagePath = prefs.getString("latest_image_path", null)
+        val bitmap = imagePath?.let { path ->
+            runCatching {
+                if (File(path).isFile) {
+                    BitmapFactory.decodeFile(
+                        path,
+                        BitmapFactory.Options().apply { inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 }
+                    )
+                } else null
+            }.getOrNull()
+        }
+        val drawingId = prefs.getLong("last_drawing_id", 0L)
+
         provideContent {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(ColorProvider(R.color.northstar_bg))
-                    .padding(14.dp)
+                    .clickable(actionStartActivity<SharedBoardActivity>())
+                    .padding(12.dp)
             ) {
                 Text(
                     text = "NORTHSTAR CONNECT",
@@ -37,23 +58,40 @@ class NorthStarWidget : GlanceAppWidget() {
                         fontSize = 12.sp
                     )
                 )
-                Spacer(modifier = GlanceModifier.height(12.dp))
-                Text(
-                    text = "Merhaba!",
-                    style = TextStyle(
-                        color = ColorProvider(R.color.northstar_white),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 23.sp
+                Spacer(modifier = GlanceModifier.height(6.dp))
+                if (bitmap != null) {
+                    Image(
+                        provider = ImageProvider(bitmap),
+                        contentDescription = "Son eklenen çizim",
+                        modifier = GlanceModifier.fillMaxWidth().height(82.dp)
                     )
-                )
-                Spacer(modifier = GlanceModifier.height(8.dp))
-                Text(
-                    text = "İlk demo mesajı",
-                    style = TextStyle(
-                        color = ColorProvider(R.color.northstar_muted),
-                        fontSize = 11.sp
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    Text(
+                        text = "Yeni resim eklendi",
+                        style = TextStyle(
+                            color = ColorProvider(R.color.northstar_white),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
                     )
-                )
+                } else {
+                    Text(
+                        text = "Henüz resim yok",
+                        style = TextStyle(
+                            color = ColorProvider(R.color.northstar_white),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    )
+                    Spacer(modifier = GlanceModifier.height(6.dp))
+                    Text(
+                        text = "Uygulamadan oda koduna bağlan.",
+                        style = TextStyle(
+                            color = ColorProvider(R.color.northstar_muted),
+                            fontSize = 10.sp
+                        )
+                    )
+                }
             }
         }
     }

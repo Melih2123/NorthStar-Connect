@@ -3,6 +3,10 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
+
 android {
     namespace 'com.northstar.connect'
     compileSdk 35
@@ -11,12 +15,17 @@ android {
         applicationId 'com.northstar.connect'
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '0.1.0'
+        versionCode 9
+        versionName '0.5.7'
     }
 
     buildFeatures {
+        compose true
         buildConfig true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.14'
     }
 
     compileOptions {
@@ -32,7 +41,10 @@ android {
 dependencies {
     implementation 'androidx.core:core-ktx:1.15.0'
     implementation 'androidx.activity:activity-ktx:1.9.3'
-
     implementation 'androidx.glance:glance-appwidget:1.1.1'
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
 
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
