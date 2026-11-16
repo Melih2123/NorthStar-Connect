@@ -1,47 +1,28 @@
-NORTHSTAR CONNECT v0.5.7 — FULL SOURCE PROJECT
+NORTHSTAR CONNECT v0.6.0 — FULL SOURCE PROJECT
 
 Included:
-- FastAPI backend with persistent room state, collaborative canvas events, and room chat
-- Web/PC Paint workspace with shared color/brush tools
-- Clipboard image paste to the shared canvas (Ctrl+V / Cmd+V)
-- Clipboard image paste into room chat when the chat composer is focused
-- File picker and drag/drop image insertion
-- Android Kotlin app, shared editor, room chat, photo picker, home-screen widget, and launcher icon
-- J.A.R.V.I.S. read-only shared-canvas and room-chat viewer
-- GitHub Actions backend tests + Android debug APK build
+- Existing collaborative canvas, room chat, shared photos, Android widget, and JARVIS read-only viewer
+- Account registration/login with random stable Account ID and Argon2id password hashing
+- Android Keystore AES-GCM encryption for locally stored bearer session tokens
+- Friend requests, accepted friend list, direct and room invitations, persisted inbox
+- FCM account notifications and backend-capability-aware WorkManager polling fallback
+- Short-lived one-time signaling tickets and friend-only WebSocket signaling
+- Browser-to-browser WebRTC DataChannel direct-message test on /friends.html (keepalive + presence refresh)
+- Android one-tap launch of /friends.html for browser-based P2P testing (requires sign-in in the browser as a separate session)
+- STUN by default and optional TURN via environment variables
 
-The ZIP intentionally excludes runtime/personal files:
-- .git/ repository history
-- backend/data/ SQLite database and uploaded images
-- backend/.venv/ Python virtual environment
-- android/app/google-services.json
-- backend/.env and local.properties
+Important scope boundary:
+- Android account/friend/invite UI is implemented, but native Android WebRTC DataChannel is not yet implemented.
+- Browser DataChannel demo sends direct test messages between browsers. Shared canvas and room chat remain on the server WebSocket in this release.
+- Signaling presence/tickets are in-memory; deploy one Uvicorn worker until a shared store is added.
+- Existing room codes are not yet bound to accounts.
 
-Windows quick start:
-1. Extract this ZIP to a project folder.
-2. Open CMD in the extracted project folder.
-3. Run: cd backend
-4. Run: run-windows.cmd
-5. Open http://127.0.0.1:8000/ for J.A.R.V.I.S.
-6. Open http://127.0.0.1:8000/connect-drawing.html for the shared Paint editor.
-7. In another PowerShell window, expose the service with:
-   tailscale funnel --bg 8000
+Preserve on update: .git, backend/data, backend/.venv, android/app/google-services.json, and local private config.
 
-For existing GitHub repository updates, copy these source files into the existing
-repository root, preserving its .git folder and backend/data directory. Then:
-   git add .
-   git commit -m "Add room chat and clipboard image sharing"
-   git push
-
-The GitHub Actions workflow first runs the backend pytest suite, then builds and uploads
-the Android debug APK. Android Gradle compilation has not been run in this environment;
-verify the Actions result before installing the APK.
-
-Security:
-A room code currently acts as the shared access key. Funnel exposes the backend to the
-public internet. Share room codes only with trusted people. There are no user accounts,
-room revocation, end-to-end encryption, or production-grade rate limits yet.
-
-If pip is configured globally to use a mirror that is unreachable, the included
-Windows launcher explicitly selects https://pypi.org/simple for installation. If your
-network requires a proxy, keep your valid proxy environment configuration enabled.
+v0.6.1 Windows desktop addition:
+- Added a Tauri 2 Windows desktop shell in windows-client/.
+- Bundles the shared canvas, Friends/accounts page and J.A.R.V.I.S. viewer from web/.
+- Desktop backend URL is configurable from the top bar and checked through GET /health.
+- Friends REST calls and signaling WebSocket use the selected backend URL.
+- .github/workflows/windows-client.yml builds the Windows NSIS setup executable and app binary on a Windows GitHub Actions runner.
+- The Windows application source is included; no compiled Windows executable is included in this ZIP because this workspace does not have the Windows/MSVC build toolchain.

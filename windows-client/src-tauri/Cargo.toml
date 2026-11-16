@@ -1,0 +1,13 @@
+[package]
+name = "northstar-connect"
+version = "0.6.1"
+description = "NorthStar Connect Windows desktop client"
+authors = ["NorthStar Connect"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[build-dependencies]
+tauri-build = { version = "2" }
+
+[dependencies]
+tauri = { version = "2" }

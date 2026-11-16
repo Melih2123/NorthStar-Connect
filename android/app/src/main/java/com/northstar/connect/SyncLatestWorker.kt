@@ -25,7 +25,6 @@ import org.json.JSONObject
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
-import com.google.firebase.FirebaseApp
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
@@ -39,40 +38,119 @@ class SyncLatestWorker(appContext: Context, params: WorkerParameters) : Coroutin
     override suspend fun doWork(): Result {
         val server = SyncConfig.serverUrl(applicationContext)
         val room = SyncConfig.roomCode(applicationContext)
-        if (server.isBlank() || room.isBlank()) return Result.failure()
+        val prefs = SyncConfig.prefs(applicationContext)
+
+        // Account-level friend requests and peer invites are checked even when
+        // no shared room has been selected on this installation.
+        runCatching { pollSocialFallback(server, prefs) }
+            .onFailure { android.util.Log.w("NorthStarSync", "Social inbox polling failed.", it) }
+
+        if (room.isBlank()) {
+            prefs.edit().putString("widget_sync_status", "Hesap bildirimleri kontrol edildi · Henüz oda seçilmedi.").apply()
+            runCatching { NorthStarWidget().updateAll(applicationContext) }
+            return Result.success()
+        }
+
+        prefs.edit().putString("widget_sync_status", "Tuval sunucudan alınıyor…").apply()
+        runCatching { NorthStarWidget().updateAll(applicationContext) }
 
         return try {
-            pollFallbackNotifications(server, room)
+            // Notification polling is isolated: a failure here must not block canvas sync.
+            runCatching { pollFallbackNotifications(server, room) }
+                .onFailure { android.util.Log.w("NorthStarSync", "Notification poll failed; continuing canvas sync.", it) }
 
             val url = "${server.trimEnd('/')}/api/rooms/${room.uppercase()}/canvas"
             val request = Request.Builder().url(url).get().build()
             val response = http.newCall(request).execute()
             val body = response.use {
-                if (!it.isSuccessful) error("Canvas sync HTTP ${it.code}")
+                if (!it.isSuccessful) error("Canvas HTTP ${it.code}")
                 it.body?.string() ?: error("Empty canvas response")
             }
+
             val json = JSONObject(body)
             val events = json.optJSONArray("events") ?: org.json.JSONArray()
             val lastId = json.optLong("last_event_id", 0L)
-            val prefs = SyncConfig.prefs(applicationContext)
             val previous = prefs.getLong("widget_event_id", -1L)
+            val savedPath = prefs.getString("latest_image_path", null).orEmpty()
+            val savedImageExists = savedPath.isNotBlank() && File(savedPath).isFile
 
-            if (lastId != previous || !File(prefs.getString("latest_image_path", "") ?: "").isFile) {
+            if (lastId != previous || !savedImageExists) {
                 val bitmap = renderBoard(events, 480, 260, server, room)
                 val output = File(applicationContext.filesDir, "northstar_shared_canvas.png")
-                FileOutputStream(output).use { bitmap.compress(Bitmap.CompressFormat.PNG, 90, it) }
+                FileOutputStream(output).use { stream ->
+                    if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
+                        error("Could not write widget preview image.")
+                    }
+                    stream.flush()
+                }
                 bitmap.recycle()
+
                 prefs.edit()
                     .putLong("widget_event_id", lastId)
                     .putLong("last_drawing_id", lastId)
                     .putString("latest_image_path", output.absolutePath)
                     .putString("latest_image_time", System.currentTimeMillis().toString())
                     .apply()
-                NorthStarWidget().updateAll(applicationContext)
             }
+
+            val eventCount = events.length()
+            val status = if (eventCount == 0) {
+                "Oda bağlı · Tuval henüz boş."
+            } else {
+                "Güncel · $eventCount tuval olayı"
+            }
+            prefs.edit()
+                .putString("widget_sync_status", status)
+                .putLong("widget_last_sync_at", System.currentTimeMillis())
+                .remove("widget_sync_error")
+                .apply()
+
+            // Always refresh after a successful fetch, even if the event ID is unchanged.
+            NorthStarWidget().updateAll(applicationContext)
             Result.success()
         } catch (e: Exception) {
+            val detail = (e.message ?: e.javaClass.simpleName).take(72)
+            prefs.edit()
+                .putString("widget_sync_status", "Senkronizasyon hatası: $detail")
+                .putString("widget_sync_error", detail)
+                .apply()
+            runCatching { NorthStarWidget().updateAll(applicationContext) }
+            android.util.Log.e("NorthStarSync", "Widget canvas sync failed.", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
+        }
+    }
+
+    /** Firebase-free fallback for account-level friend requests and peer invitations. */
+    private fun pollSocialFallback(server: String, prefs: android.content.SharedPreferences) {
+        val token = IdentityStore.accessToken(applicationContext) ?: return
+        // FCM is considered available only if this account/device has a token
+        // registered AND the server has valid Firebase Admin credentials.
+        if (backendAccountFcmEnabled(server, token, SyncConfig.deviceId(applicationContext))) return
+        val requests = ApiClient.getFriendRequests(server, token).optJSONArray("incoming") ?: org.json.JSONArray()
+        val invitations = ApiClient.getInvitations(server, token).optJSONArray("invitations") ?: org.json.JSONArray()
+        val currentRequests = mutableSetOf<String>()
+        val currentInvitations = mutableSetOf<String>()
+        for (i in 0 until requests.length()) {
+            val item = requests.optJSONObject(i) ?: continue
+            currentRequests.add(item.optLong("request_id").toString())
+        }
+        for (i in 0 until invitations.length()) {
+            val item = invitations.optJSONObject(i) ?: continue
+            currentInvitations.add(item.optString("invitation_id"))
+        }
+        val baseline = prefs.getBoolean("social_inbox_initialized", false)
+        val oldRequests = prefs.getStringSet("social_friend_request_ids", emptySet())?.toSet() ?: emptySet()
+        val oldInvitations = prefs.getStringSet("social_peer_invitation_ids", emptySet())?.toSet() ?: emptySet()
+        prefs.edit()
+            .putBoolean("social_inbox_initialized", true)
+            .putStringSet("social_friend_request_ids", currentRequests)
+            .putStringSet("social_peer_invitation_ids", currentInvitations)
+            .apply()
+        if (baseline && currentRequests.any { it !in oldRequests }) {
+            showLocalNotification(6301, "Yeni arkadaşlık isteğin var", "NorthStar Connect arkadaşlık isteklerini kontrol et.")
+        }
+        if (baseline && currentInvitations.any { it !in oldInvitations }) {
+            showLocalNotification(6302, "Yeni bağlantı daveti", "Bir arkadaşın doğrudan bağlantı daveti gönderdi.")
         }
     }
 
@@ -82,9 +160,8 @@ class SyncLatestWorker(appContext: Context, params: WorkerParameters) : Coroutin
      * frequently than Android's 15-minute periodic-work minimum.
      */
     private fun pollFallbackNotifications(server: String, room: String) {
-        // When the Firebase SDK is configured, FCM owns notification delivery.
-        // This avoids duplicate local notifications on devices with working FCM.
-        if (runCatching { FirebaseApp.getApps(applicationContext).isNotEmpty() }.getOrDefault(false)) return
+        // Check this room/device registration plus server credentials.
+        if (backendRoomFcmEnabled(server, room, SyncConfig.deviceId(applicationContext))) return
 
         val prefs = SyncConfig.prefs(applicationContext)
         val deviceId = SyncConfig.deviceId(applicationContext)
@@ -146,6 +223,14 @@ class SyncLatestWorker(appContext: Context, params: WorkerParameters) : Coroutin
             5202, "Yeni oda mesajı var", "NorthStar Connect odanda yeni bir mesaj var."
         )
     }
+
+    private fun backendAccountFcmEnabled(server: String, token: String, deviceId: String): Boolean = runCatching {
+        ApiClient.accountNotificationTransport(server, token, deviceId).optBoolean("fcm_enabled", false)
+    }.getOrDefault(false)
+
+    private fun backendRoomFcmEnabled(server: String, room: String, deviceId: String): Boolean = runCatching {
+        ApiClient.roomNotificationTransport(server, room, deviceId).optBoolean("fcm_enabled", false)
+    }.getOrDefault(false)
 
     private fun showLocalNotification(id: Int, title: String, text: String) {
         val context = applicationContext

@@ -1,4 +1,45 @@
-## v0.5.8: single-device presence and widget room preview
+# NorthStar Connect v0.6.0 — Accounts, Friends & P2P Signaling
+
+## v0.6.0 architecture
+
+- Account registration/login uses a stable random 128-bit UUID-style Account ID. The username is a changeable label, not the identity key.
+- Passwords are verified on the backend using Argon2id with a unique random salt encoded into the stored PHC hash. The raw password is not stored on the device or server.
+- Android stores the bearer session token encrypted with AES-256-GCM using an Android Keystore key. The server stores only a SHA-256 digest of each random session token.
+- Friends can send/accept requests, view friends, and send direct or room invitations. Invitations are persisted so offline users can receive them later.
+- The browser Friends page (`/friends.html`) performs WebRTC signaling through one-use, short-lived tickets and can establish an actual browser-to-browser WebRTC DataChannel for direct test messages. The page refreshes friend presence/invitation lists and sends signaling keepalives.
+- STUN is provided by default. Configure TURN with `NORTHSTAR_TURN_URL`, `NORTHSTAR_TURN_USERNAME`, and `NORTHSTAR_TURN_CREDENTIAL` for restrictive NATs. Without TURN, some direct peer connections will fail.
+- Android has native account/friend/invitation UI and notification delivery, plus a one-tap link to the responsive browser P2P page. Sign in again on that browser page to test P2P. Native Android WebRTC DataChannel transport is **not yet connected** in this release; the Android canvas/chat still use the existing room WebSocket. Browser P2P test messages are direct, but shared canvas events are still server-mediated.
+- The signaling presence/ticket store is in-memory. Run one Uvicorn worker for this release; multi-worker/multi-host deployments need shared Redis or another shared presence store.
+- Existing room-code access remains compatible and is not yet bound to accounts. Preserve `backend/data/` when updating.
+
+## Install / update v0.6.0
+
+1. Copy this ZIP's project contents over the existing repository root. Keep `.git`, `backend/data/`, `.venv/`, Firebase credentials and local-only files.
+2. In `backend`, run `run-windows.cmd`. It checks for the new `argon2-cffi` dependency and installs missing requirements automatically; manual alternative: `python -m pip install -r requirements.txt`.
+3. Restart the backend. SQLite creates the account/friend tables automatically in the existing database.
+4. Push the source update using `git add -A`, `git commit`, and `git push`. GitHub Actions runs backend tests and builds the Android debug APK.
+5. Open `/friends.html` in two browsers (or use the Android **TARAYICIDA DOĞRUDAN P2P AÇ** button), sign in to different accounts, add each other, accept the request, and test **P2P BAĞLAN**. The browser page has its own session, so sign in there with the same account; the Android app's encrypted token is not copied into browser storage.
+6. Keep both Friends pages open while testing. The online indicator represents an active signaling WebSocket, not simply an installed app or an account that exists.
+
+### Security and deployment notes
+
+- Do not derive Account IDs from password hashes. Account IDs are random and stable; password changes do not change identity.
+- Use HTTPS/Tailscale Funnel for remote sign-in. Do not share database files or account tokens.
+- Add production-grade rate limiting, account recovery, email verification and abuse controls before public launch.
+- TURN credentials should be short-lived in a public deployment; do not hardcode permanent TURN secrets into the app.
+
+---
+
+## v0.5.9: widget refresh and sync diagnostics
+
+- Saving or joining a room immediately refreshes the Glance widget.
+- Placing the widget on the home screen schedules an immediate room snapshot sync.
+- Notification polling is isolated from canvas synchronization; notification errors no longer prevent preview updates.
+- Every successful canvas fetch refreshes the widget, even if the event ID is unchanged.
+- The widget displays the latest room and a readable sync/error status.
+- One-time widget refresh jobs are de-duplicated.
+
+## v0.5.9: single-device presence and widget room preview
 
 - Presence counts unique device IDs rather than raw WebSocket connections.
 - A reconnect from the same installation replaces its stale room socket.
@@ -6,7 +47,7 @@
 - Opening the board from the widget schedules an immediate snapshot refresh.
 - The widget displays the last saved room code above its canvas preview.
 
-# NorthStar Connect v0.5.8 — Full Project
+# NorthStar Connect v0.6.0 — Accounts, Friends & P2P
 
 ## What's new
 - Last room auto-reconnects in the web editor after refresh.
@@ -17,7 +58,7 @@
 - Chat messages trigger Firebase push notifications to other registered Android devices. Notification text remains generic: `NorthStar Connect` / `Yeni resim eklendi`.
 
 ## Install / update
-1. Extract this ZIP. Copy the contents of `NorthStar-Connect-v0.5.8-Full-Project` over the existing repository root.
+1. Extract this ZIP. Copy the contents of `NorthStar-Connect-v0.6.0-Full-Project` over the existing repository root.
 2. Preserve `.git`, `backend/data/`, `backend/.venv/`, local Firebase credentials, and `android/app/google-services.json`.
 3. From repository root run:
    ```cmd
@@ -42,7 +83,7 @@ Photo selection/move/resize/delete is implemented in the PC/web editor and synch
 NorthStar Connect is now a **shared collaborative canvas**, not a send-one-image-at-a-time messenger. Every connected participant in a room sees the same board and can draw, erase, undo their own strokes, and clear the shared board.
 
 
-## v0.5.8: notification fallback without Firebase
+## v0.5.9: notification fallback without Firebase
 
 - The Android server field now defaults to the configured Tailscale Funnel URL: `https://melih-uzun.taild8cc3a.ts.net`. A manually entered server address still takes precedence.
 - When Firebase is not initialized, WorkManager polls `/api/rooms/{code}/updates` and displays local Android notifications for remote canvas changes and room messages.
@@ -167,7 +208,7 @@ The Android widget shows the latest server-rendered shared board snapshot. Tap t
 
 ## 6. Configure Firebase notifications (optional)
 
-Without Firebase, foreground WebSocket collaboration still works. The v0.5.8 Android client also polls the Tailscale Funnel using WorkManager and creates local notifications. This fallback normally checks no more often than every 15 minutes, may be delayed by Android battery management, and does not run while the OS has force-stopped the app.
+Without Firebase, foreground WebSocket collaboration still works. The v0.5.9 Android client also polls the Tailscale Funnel using WorkManager and creates local notifications. This fallback normally checks no more often than every 15 minutes, may be delayed by Android battery management, and does not run while the OS has force-stopped the app.
 
 ### Android Firebase config
 
@@ -312,7 +353,7 @@ The Android app source is under `android/`. It includes:
 
 - This is a debug APK, suitable for testing. It is not a Play Store release.
 - The Android app can use the realtime WebSocket shared-canvas connection while open.
-- Firebase gives the preferred near-instant push path. Without Firebase, v0.5.8 uses periodic Tailscale Funnel polling and local notifications; Android may delay the worker, and force-stopping the app prevents it from running.
+- Firebase gives the preferred near-instant push path. Without Firebase, v0.5.9 uses periodic Tailscale Funnel polling and local notifications; Android may delay the worker, and force-stopping the app prevents it from running.
 - Notification text is intentionally generic: title `NorthStar Connect`, body `Yeni resim eklendi`.
 - JARVIS's integrated Connect Viewer remains read-only; editing is done from Android or the PC web editor.
 - Android Gradle compilation must be verified by the GitHub Actions run. This environment did not run an Android SDK build.
@@ -357,3 +398,11 @@ The Android debug APK is rebuilt by GitHub Actions. This package was not compile
 - Updated Android widget snapshot rendering to include pasted images and marker/undo/redo replay.
 - Updated GitHub Actions to run the backend test suite before building the Android debug APK.
 - Android version: 0.5.5 (versionCode 7).
+
+## Windows desktop client (v0.6.1)
+
+A Tauri 2 Windows client is included in `windows-client/`. It wraps the existing web canvas, Friends/accounts page and read-only J.A.R.V.I.S. viewer in a desktop window. It uses the same FastAPI backend and does not create a second database.
+
+Build on Windows from `windows-client/` with `npm install` followed by `npm run build`. The NSIS installer and app executable are written under `windows-client/src-tauri/target/release/`. The `NorthStar Connect Windows Client` GitHub Actions workflow also builds them on `windows-latest` and uploads a workflow artifact. See `windows-client/README.md` for prerequisites and details.
+
+The shared canvas still uses the existing server WebSocket transport. The Friends page's current WebRTC DataChannel is a direct-message test; it does not yet transport the shared canvas P2P.

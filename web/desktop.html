@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06111a">
+<title>NorthStar Connect</title>
+<style>
+:root{color-scheme:dark;--bg:#06111a;--panel:#0b1c28;--panel2:#102635;--line:#1c3d4d;--cyan:#48eaff;--muted:#86a7b4;--text:#e8f8fc;--green:#6ce7b1;--red:#ff8a91}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Segoe UI",Inter,system-ui,sans-serif;overflow:hidden}
+.app{height:100%;display:flex;flex-direction:column;background:radial-gradient(ellipse at 40% -30%,#12364a 0,transparent 55%),var(--bg)}
+.top{height:66px;flex-shrink:0;display:flex;align-items:center;gap:18px;padding:0 20px;border-bottom:1px solid var(--line);background:#07151feF}
+.brand{display:flex;align-items:center;gap:12px;min-width:245px}.mark{width:35px;height:35px;display:grid;place-items:center;border:1px solid var(--cyan);color:var(--cyan);font-size:21px;clip-path:polygon(0 0,78% 0,100% 22%,100% 100%,22% 100%,0 78%);text-shadow:0 0 14px #48eaff}.name{font-weight:800;letter-spacing:.16em;font-size:13px}.sub{font-size:9px;letter-spacing:.17em;color:var(--muted);margin-top:2px}
+.nav{display:flex;align-items:center;gap:6px}.nav button{border:1px solid transparent;border-radius:8px;background:transparent;color:#9bb8c2;padding:10px 13px;font:700 10px/1 "Segoe UI",sans-serif;letter-spacing:.1em;cursor:pointer}.nav button:hover{background:#102b39;color:var(--text)}.nav button.active{border-color:#2b6879;color:#e8fcff;background:#0d3442;box-shadow:inset 0 -2px var(--cyan)}
+.backend{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0}.backend label{font-size:9px;color:var(--muted);letter-spacing:.12em;white-space:nowrap}.backend input{width:min(29vw,390px);min-width:190px;background:#06131c;border:1px solid #244655;border-radius:7px;padding:9px 10px;color:#dff8fc;font:11px Consolas,monospace;outline:none}.backend input:focus{border-color:var(--cyan)}.backend button{border:1px solid #257286;border-radius:7px;background:#0b4658;color:#e8fbff;padding:9px 11px;font-size:10px;font-weight:700;cursor:pointer}.health{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:9px;white-space:nowrap;min-width:76px}.dot{width:7px;height:7px;border-radius:50%;background:#637783}.dot.ok{background:var(--green);box-shadow:0 0 9px #6ce7b1}.dot.bad{background:var(--red);box-shadow:0 0 9px #ff8a91}
+.stage{flex:1;min-height:0;position:relative}.stage iframe{border:0;width:100%;height:100%;display:block;background:#07121a}.bottom{height:25px;flex-shrink:0;border-top:1px solid #15303d;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#62818d;font-size:9px;letter-spacing:.1em}.bottom strong{color:#94bdc7;font-weight:600}
+@media(max-width:1050px){.top{gap:10px;padding:0 10px}.brand{min-width:190px}.backend label{display:none}.backend input{width:220px;min-width:130px}.nav button{padding:9px 8px}}
+@media(max-width:760px){.top{height:auto;min-height:68px;flex-wrap:wrap;padding:9px}.brand{min-width:0;flex:1}.backend{order:3;width:100%;margin-left:0}.backend input{width:100%;flex:1}.nav{order:2}.health{min-width:65px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="mark">✳</div><div><div class="name">NORTHSTAR CONNECT</div><div class="sub">WINDOWS DESKTOP CLIENT · v0.6.1</div></div></div>
+    <nav class="nav" aria-label="Ana gezinme">
+      <button class="active" data-page="connect-drawing.html">TUVAL</button>
+      <button data-page="friends.html">ARKADAŞLAR</button>
+      <button data-page="index.html">J.A.R.V.I.S.</button>
+    </nav>
+    <div class="backend"><label for="backendUrl">SERVER</label><input id="backendUrl" spellcheck="false" placeholder="https://sunucu-adresi"><button id="saveServer">KAYDET</button><div class="health"><i id="healthDot" class="dot"></i><span id="healthText">KONTROL EDİLMEDİ</span></div></div>
+  </header>
+  <main class="stage"><iframe id="content" title="NorthStar Connect workspace" src="connect-drawing.html"></iframe></main>
+  <footer class="bottom"><span><strong>NORTHSTAR</strong> · SAME ACCOUNT · SAME ROOMS</span><span>WEBRTC READY WEBVIEW · BACKEND CONNECTED SEPARATELY</span></footer>
+</div>
+<script>
+'use strict';
+const DEFAULT_SERVER='https://melih-uzun.taild8cc3a.ts.net';
+const $=id=>document.getElementById(id);
+const input=$('backendUrl'), frame=$('content');
+function normalize(value){return String(value||'').trim().replace(/\/+$/,'');}
+function setHealth(state,label){$('healthDot').className='dot '+state;$('healthText').textContent=label;}
+function currentServer(){return normalize(input.value)||DEFAULT_SERVER;}
+async function checkServer(){const base=currentServer();if(!/^https?:\/\//i.test(base)){setHealth('bad','URL HATALI');return false;}setHealth('','BAĞLANIYOR');try{const response=await fetch(base+'/health',{cache:'no-store',signal:AbortSignal.timeout(7000)});if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();if(data.status!=='ok')throw new Error('Unexpected health response');setHealth('ok','SUNUCU AKTİF');return true;}catch(error){setHealth('bad','ULAŞILAMIYOR');return false;}}
+function saveServer(){const value=currentServer();if(!/^https?:\/\//i.test(value)){setHealth('bad','HTTPS/HTTP GEREKLİ');return;}input.value=value;localStorage.setItem('northstar-connect-server-url',value);frame.contentWindow.postMessage({type:'northstar-backend-changed',url:value},'*');checkServer();}
+$('saveServer').addEventListener('click',saveServer);
+input.addEventListener('keydown',event=>{if(event.key==='Enter')saveServer();});
+document.querySelectorAll('[data-page]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b===button));frame.src=button.dataset.page;}));
+const configured=normalize(localStorage.getItem('northstar-connect-server-url'));
+input.value=configured||DEFAULT_SERVER;
+if(!configured)localStorage.setItem('northstar-connect-server-url',input.value);
+checkServer();
+</script>
+</body></html>

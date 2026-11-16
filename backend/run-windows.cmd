@@ -6,7 +6,7 @@ if not exist ".venv\Scripts\activate.bat" (
     py -m venv .venv
 )
 call ".venv\Scripts\activate.bat"
-python -c "import fastapi, uvicorn, multipart" >nul 2>&1
+python -c "import fastapi, uvicorn, multipart, argon2" >nul 2>&1
 if errorlevel 1 (
     echo [NorthStar] Required backend packages are missing; installing requirements...
     python -m pip install --disable-pip-version-check --index-url https://pypi.org/simple -r requirements.txt

@@ -54,11 +54,15 @@ def test_web_editor_and_jarvis_homepage_are_served():
     with TestClient(app) as client:
         home = client.get("/")
         editor = client.get("/connect-drawing.html")
+        friends = client.get("/friends.html")
         assert home.status_code == 200
         assert "NORTHSTAR" in home.text.upper()
         assert editor.status_code == 200
         assert "ROOM CHAT" in editor.text
         assert "pasteImageToCanvas" in editor.text
+        assert friends.status_code == 200
+        assert "HESAP" in friends.text
+        assert "RTCPeerConnection" in friends.text
 
 
 def test_updates_endpoint_returns_incremental_cursors_and_chat():

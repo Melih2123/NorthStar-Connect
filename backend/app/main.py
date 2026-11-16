@@ -2,24 +2,28 @@ from __future__ import annotations
 
 import asyncio
 import json
+import hashlib
 import logging
 import os
 import re
 import secrets
 import sqlite3
 import string
+import time
 import uuid
 from collections import defaultdict
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from argon2 import PasswordHasher, Type
+from argon2.exceptions import VerifyMismatchError, VerificationError
 
 try:
     import firebase_admin
@@ -39,6 +43,10 @@ DB_PATH = DATA_DIR / "northstar.sqlite3"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 MAX_WS_MESSAGE_BYTES = 16 * 1024
 MAX_CHAT_TEXT_CHARS = 2000
+ACCOUNT_TOKEN_DAYS = 30
+SIGNALING_TICKET_SECONDS = 60
+SIGNALING_MESSAGE_LIMIT = 16 * 1024
+password_hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=2, hash_len=32, salt_len=16, type=Type.ID)
 ALPHABET = string.ascii_uppercase + string.digits
 ROOM_CODE_RE = re.compile(r"^[A-Z0-9]{12}$")
 HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
@@ -48,7 +56,7 @@ DRAWING_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title="NorthStar Connect API",
-    version="0.5.7",
+    version="0.6.0",
     description="Room-based realtime collaborative canvas and chat",
 )
 app.add_middleware(
@@ -140,6 +148,64 @@ def init_db() -> None:
         con.execute(
             "CREATE INDEX IF NOT EXISTS idx_room_messages_room_id ON room_messages(room_code, id)"
         )
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS accounts (
+                account_id TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                username_normalized TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )"""
+        )
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS account_sessions (
+                token_hash TEXT PRIMARY KEY,
+                account_id TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+            )"""
+        )
+        con.execute("CREATE INDEX IF NOT EXISTS idx_account_sessions_account ON account_sessions(account_id)")
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS account_devices (
+                account_id TEXT NOT NULL,
+                device_id TEXT NOT NULL,
+                fcm_token TEXT,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (account_id, device_id),
+                FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+            )"""
+        )
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS friend_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                requester_id TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(requester_id, target_id),
+                FOREIGN KEY (requester_id) REFERENCES accounts(account_id) ON DELETE CASCADE,
+                FOREIGN KEY (target_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+            )"""
+        )
+        con.execute("CREATE INDEX IF NOT EXISTS idx_friend_requests_target ON friend_requests(target_id, status)")
+        con.execute(
+            """CREATE TABLE IF NOT EXISTS friend_invitations (
+                id TEXT PRIMARY KEY,
+                sender_id TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                invite_type TEXT NOT NULL,
+                room_code TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (sender_id) REFERENCES accounts(account_id) ON DELETE CASCADE,
+                FOREIGN KEY (target_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+            )"""
+        )
+        con.execute("CREATE INDEX IF NOT EXISTS idx_friend_invites_target ON friend_invitations(target_id, status)")
 
 
 init_db()
@@ -212,6 +278,24 @@ class CreateRoomResponse(BaseModel):
 class RegisterDeviceRequest(BaseModel):
     device_id: str
     fcm_token: str
+
+class AccountCredentials(BaseModel):
+    username: str = Field(min_length=3, max_length=24)
+    password: str = Field(min_length=10, max_length=128)
+
+
+class AccountDeviceRequest(BaseModel):
+    device_id: str = Field(min_length=1, max_length=128)
+    fcm_token: str | None = Field(default=None, max_length=4096)
+
+
+class FriendRequestBody(BaseModel):
+    username: str = Field(min_length=3, max_length=24)
+
+
+class FriendInviteBody(BaseModel):
+    invite_type: str = Field(default="direct", pattern="^(direct|room)$")
+    room_code: str | None = Field(default=None, max_length=12)
 
 
 def event_for_client(row: sqlite3.Row) -> dict:
@@ -395,9 +479,405 @@ def persist_canvas_event(room_code: str, event_type: str, stroke_id: Optional[st
     }
 
 
+def account_public(row: sqlite3.Row) -> dict:
+    return {
+        "account_id": row["account_id"],
+        "username": row["username"],
+        "created_at": row["created_at"],
+    }
+
+
+def create_session(account_id: str) -> tuple[str, str]:
+    token = secrets.token_urlsafe(40)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    created = datetime.now(timezone.utc)
+    expires = (created + timedelta(days=ACCOUNT_TOKEN_DAYS)).isoformat()
+    with db() as con:
+        con.execute(
+            "INSERT INTO account_sessions(token_hash, account_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+            (token_hash, account_id, expires, created.isoformat()),
+        )
+    return token, expires
+
+
+def require_account(authorization: str = Header(default="")) -> dict:
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise HTTPException(status_code=401, detail="Sign in to a NorthStar account first.")
+    token_hash = hashlib.sha256(token.strip().encode("utf-8")).hexdigest()
+    with db() as con:
+        row = con.execute(
+            """SELECT a.account_id, a.username, a.username_normalized, s.expires_at
+               FROM account_sessions s JOIN accounts a ON a.account_id = s.account_id
+               WHERE s.token_hash = ?""",
+            (token_hash,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=401, detail="Invalid or expired account session.")
+        if row["expires_at"] <= utc_now():
+            con.execute("DELETE FROM account_sessions WHERE token_hash = ?", (token_hash,))
+            raise HTTPException(status_code=401, detail="Account session expired. Please sign in again.")
+    return dict(row)
+
+
+def are_friends(account_a: str, account_b: str) -> bool:
+    with db() as con:
+        row = con.execute(
+            """SELECT 1 FROM friend_requests WHERE status='accepted' AND
+               ((requester_id=? AND target_id=?) OR (requester_id=? AND target_id=?))""",
+            (account_a, account_b, account_b, account_a),
+        ).fetchone()
+    return row is not None
+
+
+def send_account_push(account_id: str, data: dict) -> int:
+    if not init_firebase():
+        return 0
+    with db() as con:
+        rows = con.execute(
+            "SELECT fcm_token FROM account_devices WHERE account_id=? AND fcm_token IS NOT NULL",
+            (account_id,),
+        ).fetchall()
+    tokens = [r["fcm_token"] for r in rows if r["fcm_token"]]
+    if not tokens:
+        return 0
+    try:
+        result = messaging.send_each_for_multicast(
+            messaging.MulticastMessage(
+                tokens=tokens,
+                data={k: str(v) for k, v in data.items()},
+                android=messaging.AndroidConfig(priority="high"),
+            )
+        )
+        return len(tokens) - result.failure_count
+    except Exception:
+        log.exception("Account push notification failed.")
+        return 0
+
+
+@app.post("/api/accounts/register")
+def register_account(payload: AccountCredentials):
+    username = payload.username.strip()
+    normalized = username.casefold()
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{3,24}", username):
+        raise HTTPException(status_code=400, detail="Username must be 3-24 characters: letters, numbers, dot, dash or underscore.")
+    if len(payload.password) < 10 or not any(c.isalpha() for c in payload.password) or not any(c.isdigit() for c in payload.password):
+        raise HTTPException(status_code=400, detail="Password must be at least 10 characters and contain letters and numbers.")
+    account_id = uuid.uuid4().hex
+    created = utc_now()
+    password_hash = password_hasher.hash(payload.password)
+    try:
+        with db() as con:
+            con.execute(
+                "INSERT INTO accounts(account_id, username, username_normalized, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+                (account_id, username, normalized, password_hash, created),
+            )
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="This username is already taken.")
+    token, expires = create_session(account_id)
+    return {"account": {"account_id": account_id, "username": username, "created_at": created}, "access_token": token, "token_type": "bearer", "expires_at": expires}
+
+
+@app.post("/api/accounts/login")
+def login_account(payload: AccountCredentials):
+    normalized = payload.username.strip().casefold()
+    with db() as con:
+        row = con.execute("SELECT * FROM accounts WHERE username_normalized=?", (normalized,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="Username or password is incorrect.")
+    try:
+        password_hasher.verify(row["password_hash"], payload.password)
+    except (VerifyMismatchError, VerificationError):
+        raise HTTPException(status_code=401, detail="Username or password is incorrect.")
+    if password_hasher.check_needs_rehash(row["password_hash"]):
+        with db() as con:
+            con.execute("UPDATE accounts SET password_hash=? WHERE account_id=?", (password_hasher.hash(payload.password), row["account_id"]))
+    token, expires = create_session(row["account_id"])
+    return {"account": account_public(row), "access_token": token, "token_type": "bearer", "expires_at": expires}
+
+
+@app.get("/api/accounts/me")
+def get_my_account(account: dict = Depends(require_account)):
+    return {"account_id": account["account_id"], "username": account["username"]}
+
+
+@app.post("/api/accounts/logout")
+def logout_account(authorization: str = Header(default=""), account: dict = Depends(require_account)):
+    _, _, token = authorization.partition(" ")
+    token_hash = hashlib.sha256(token.strip().encode("utf-8")).hexdigest()
+    with db() as con:
+        con.execute("DELETE FROM account_sessions WHERE token_hash=?", (token_hash,))
+    return {"logged_out": True}
+
+
+@app.post("/api/accounts/devices")
+def register_account_device(payload: AccountDeviceRequest, account: dict = Depends(require_account)):
+    with db() as con:
+        con.execute(
+            """INSERT INTO account_devices(account_id, device_id, fcm_token, updated_at) VALUES (?, ?, ?, ?)
+               ON CONFLICT(account_id, device_id) DO UPDATE SET
+                 fcm_token=COALESCE(excluded.fcm_token, account_devices.fcm_token),
+                 updated_at=excluded.updated_at""",
+            (account["account_id"], payload.device_id.strip(), payload.fcm_token, utc_now()),
+        )
+    return {"registered": True, "account_id": account["account_id"]}
+
+
+@app.delete("/api/accounts/devices/{device_id}")
+def unregister_account_device(device_id: str, account: dict = Depends(require_account)):
+    with db() as con:
+        con.execute("DELETE FROM account_devices WHERE account_id=? AND device_id=?", (account["account_id"], device_id))
+    return {"unregistered": True}
+
+
+@app.post("/api/friends/requests")
+def send_friend_request(payload: FriendRequestBody, account: dict = Depends(require_account)):
+    target_name = payload.username.strip()
+    with db() as con:
+        target = con.execute("SELECT account_id, username FROM accounts WHERE username_normalized=?", (target_name.casefold(),)).fetchone()
+        if not target:
+            raise HTTPException(status_code=404, detail="NorthStar account not found.")
+        if target["account_id"] == account["account_id"]:
+            raise HTTPException(status_code=400, detail="You cannot add yourself as a friend.")
+        existing = con.execute(
+            """SELECT * FROM friend_requests WHERE
+               (requester_id=? AND target_id=?) OR (requester_id=? AND target_id=?)""",
+            (account["account_id"], target["account_id"], target["account_id"], account["account_id"]),
+        ).fetchone()
+        if existing and existing["status"] == "accepted":
+            raise HTTPException(status_code=409, detail="You are already friends.")
+        if existing and existing["status"] == "pending":
+            # If the other person already requested us, accept reciprocally.
+            if existing["requester_id"] == target["account_id"]:
+                con.execute("UPDATE friend_requests SET status='accepted', updated_at=? WHERE id=?", (utc_now(), existing["id"]))
+                return {"status": "accepted", "friend": {"account_id": target["account_id"], "username": target["username"]}}
+            raise HTTPException(status_code=409, detail="Friend request is already pending.")
+        created = utc_now()
+        if existing and existing["status"] == "removed":
+            con.execute("UPDATE friend_requests SET requester_id=?, target_id=?, status='pending', created_at=?, updated_at=? WHERE id=?",
+                        (account["account_id"], target["account_id"], created, created, existing["id"]))
+            request_id = int(existing["id"])
+        else:
+            cursor = con.execute(
+                "INSERT INTO friend_requests(requester_id, target_id, status, created_at, updated_at) VALUES (?, ?, 'pending', ?, ?)",
+                (account["account_id"], target["account_id"], created, created),
+            )
+            request_id = int(cursor.lastrowid)
+    send_account_push(target["account_id"], {"type": "friend_request", "request_id": request_id, "title": "NorthStar Connect", "body": "Yeni arkadaşlık isteğin var."})
+    return {"request_id": request_id, "status": "pending", "target": {"account_id": target["account_id"], "username": target["username"]}}
+
+
+@app.get("/api/friends/requests")
+def list_friend_requests(account: dict = Depends(require_account)):
+    with db() as con:
+        incoming = con.execute(
+            """SELECT r.id, a.account_id, a.username, r.created_at FROM friend_requests r
+               JOIN accounts a ON a.account_id=r.requester_id WHERE r.target_id=? AND r.status='pending' ORDER BY r.id DESC""",
+            (account["account_id"],),
+        ).fetchall()
+        outgoing = con.execute(
+            """SELECT r.id, a.account_id, a.username, r.created_at FROM friend_requests r
+               JOIN accounts a ON a.account_id=r.target_id WHERE r.requester_id=? AND r.status='pending' ORDER BY r.id DESC""",
+            (account["account_id"],),
+        ).fetchall()
+    return {
+        "incoming": [{"request_id": r["id"], "account_id": r["account_id"], "username": r["username"], "created_at": r["created_at"]} for r in incoming],
+        "outgoing": [{"request_id": r["id"], "account_id": r["account_id"], "username": r["username"], "created_at": r["created_at"]} for r in outgoing],
+    }
+
+
+@app.post("/api/friends/requests/{request_id}/accept")
+def accept_friend_request(request_id: int, account: dict = Depends(require_account)):
+    with db() as con:
+        row = con.execute(
+            """SELECT r.id, r.requester_id, a.username FROM friend_requests r
+               JOIN accounts a ON a.account_id=r.requester_id
+               WHERE r.id=? AND r.target_id=? AND r.status='pending'""",
+            (request_id, account["account_id"]),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Pending friend request not found.")
+        con.execute("UPDATE friend_requests SET status='accepted', updated_at=? WHERE id=?", (utc_now(), request_id))
+    send_account_push(row["requester_id"], {"type": "friend_accepted", "title": "NorthStar Connect", "body": "Arkadaşlık isteğin kabul edildi."})
+    return {"status": "accepted", "friend": {"account_id": row["requester_id"], "username": row["username"]}}
+
+
+@app.get("/api/friends")
+def list_friends(account: dict = Depends(require_account)):
+    with db() as con:
+        rows = con.execute(
+            """SELECT a.account_id, a.username FROM friend_requests r JOIN accounts a
+               ON a.account_id = CASE WHEN r.requester_id=? THEN r.target_id ELSE r.requester_id END
+               WHERE r.status='accepted' AND (r.requester_id=? OR r.target_id=?) ORDER BY a.username COLLATE NOCASE""",
+            (account["account_id"], account["account_id"], account["account_id"]),
+        ).fetchall()
+    return {"friends": [{"account_id": r["account_id"], "username": r["username"], "online": r["account_id"] in SIGNALING_CLIENTS} for r in rows]}
+
+
+@app.delete("/api/friends/{friend_account_id}")
+def remove_friend(friend_account_id: str, account: dict = Depends(require_account)):
+    with db() as con:
+        cursor = con.execute(
+            """UPDATE friend_requests SET status='removed', updated_at=? WHERE status='accepted' AND
+               ((requester_id=? AND target_id=?) OR (requester_id=? AND target_id=?))""",
+            (utc_now(), account["account_id"], friend_account_id, friend_account_id, account["account_id"]),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Friend not found.")
+    return {"removed": True}
+
+
+@app.post("/api/friends/{friend_account_id}/invite")
+def invite_friend(friend_account_id: str, payload: FriendInviteBody, account: dict = Depends(require_account)):
+    if not are_friends(account["account_id"], friend_account_id):
+        raise HTTPException(status_code=403, detail="You can invite accepted friends only.")
+    if payload.invite_type == "room":
+        if not payload.room_code or not ROOM_CODE_RE.fullmatch(payload.room_code.upper()) or not room_exists(payload.room_code.upper()):
+            raise HTTPException(status_code=404, detail="A valid existing room code is required.")
+    elif payload.room_code:
+        raise HTTPException(status_code=400, detail="Direct invitations do not need a room code.")
+    invite_id = uuid.uuid4().hex
+    now = utc_now()
+    with db() as con:
+        con.execute(
+            "INSERT INTO friend_invitations(id, sender_id, target_id, invite_type, room_code, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)",
+            (invite_id, account["account_id"], friend_account_id, payload.invite_type, payload.room_code.upper() if payload.room_code else None, now, now),
+        )
+    delivered = send_account_push(friend_account_id, {
+        "type": "peer_invitation", "invitation_id": invite_id,
+        "invite_type": payload.invite_type, "room_code": payload.room_code or "",
+        "title": "NorthStar Connect", "body": "Bir arkadaşın bağlantı daveti gönderdi."
+    })
+    return {"invitation_id": invite_id, "status": "pending", "online": friend_account_id in SIGNALING_CLIENTS, "push_devices_reached": delivered}
+
+
+@app.get("/api/invitations")
+def list_invitations(account: dict = Depends(require_account)):
+    with db() as con:
+        rows = con.execute(
+            """SELECT i.*, a.username AS sender_username FROM friend_invitations i
+               JOIN accounts a ON a.account_id=i.sender_id
+               WHERE i.target_id=? AND i.status='pending' ORDER BY i.created_at DESC LIMIT 50""",
+            (account["account_id"],),
+        ).fetchall()
+    return {"invitations": [{"invitation_id": r["id"], "sender_account_id": r["sender_id"], "sender_username": r["sender_username"], "invite_type": r["invite_type"], "room_code": r["room_code"], "created_at": r["created_at"]} for r in rows]}
+
+
+@app.post("/api/invitations/{invitation_id}/accept")
+def accept_invitation(invitation_id: str, account: dict = Depends(require_account)):
+    with db() as con:
+        row = con.execute(
+            "SELECT * FROM friend_invitations WHERE id=? AND target_id=? AND status='pending'",
+            (invitation_id, account["account_id"]),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Pending invitation not found.")
+        con.execute("UPDATE friend_invitations SET status='accepted', updated_at=? WHERE id=?", (utc_now(), invitation_id))
+    return {"accepted": True, "invite_type": row["invite_type"], "room_code": row["room_code"], "sender_account_id": row["sender_id"]}
+
+
+# One-time tickets avoid placing long-lived bearer tokens in WebSocket URLs.
+SIGNALING_TICKETS: dict[str, tuple[str, float]] = {}
+SIGNALING_CLIENTS: dict[str, set[WebSocket]] = defaultdict(set)
+
+
+@app.post("/api/signaling/ticket")
+def create_signaling_ticket(account: dict = Depends(require_account)):
+    ticket = secrets.token_urlsafe(32)
+    SIGNALING_TICKETS[ticket] = (account["account_id"], time.monotonic() + SIGNALING_TICKET_SECONDS)
+    return {"ticket": ticket, "expires_in": SIGNALING_TICKET_SECONDS, "websocket_path": "/ws/signaling"}
+
+
+@app.get("/api/network/ice-config")
+def ice_config(account: dict = Depends(require_account)):
+    servers = [{"urls": os.getenv("NORTHSTAR_STUN_URL", "stun:stun.l.google.com:19302")}]
+    turn_url = os.getenv("NORTHSTAR_TURN_URL", "").strip()
+    turn_user = os.getenv("NORTHSTAR_TURN_USERNAME", "").strip()
+    turn_credential = os.getenv("NORTHSTAR_TURN_CREDENTIAL", "").strip()
+    if turn_url and turn_user and turn_credential:
+        servers.append({"urls": turn_url, "username": turn_user, "credential": turn_credential})
+    return {"ice_servers": servers, "turn_configured": len(servers) > 1, "preferred_transport": "peer-to-peer", "fallback": "existing_room_websocket_for_shared_canvas_only"}
+
+
+@app.websocket("/ws/signaling")
+async def signaling_socket(websocket: WebSocket):
+    ticket = websocket.query_params.get("ticket", "")
+    record = SIGNALING_TICKETS.pop(ticket, None)
+    if not record or record[1] < time.monotonic():
+        await websocket.close(code=4401, reason="Missing, expired or already used signaling ticket")
+        return
+    account_id = record[0]
+    await websocket.accept()
+    SIGNALING_CLIENTS[account_id].add(websocket)
+    await websocket.send_json({"type": "signaling_ready", "account_id": account_id})
+    try:
+        while True:
+            raw_text = await websocket.receive_text()
+            if len(raw_text.encode("utf-8")) > SIGNALING_MESSAGE_LIMIT:
+                await websocket.send_json({"type": "error", "message": "Signaling packet too large."})
+                continue
+            try:
+                message = json.loads(raw_text)
+                target_id = str(message.get("target_account_id", ""))
+                kind = str(message.get("type", ""))
+                if kind == "ping":
+                    await websocket.send_json({"type": "pong"})
+                    continue
+                if kind not in {"call_invite", "offer", "answer", "ice_candidate", "call_reject", "call_end"}:
+                    raise ValueError("Unsupported signaling packet.")
+                if not target_id or not are_friends(account_id, target_id):
+                    raise ValueError("Signaling is allowed between accepted friends only.")
+                payload = message.get("payload", {})
+                if not isinstance(payload, dict):
+                    raise ValueError("Signaling payload must be an object.")
+                forwarded = {"type": kind, "from_account_id": account_id, "payload": payload}
+                peers = tuple(SIGNALING_CLIENTS.get(target_id, set()))
+                if not peers:
+                    await websocket.send_json({"type": "peer_unavailable", "target_account_id": target_id, "fallback": "room-websocket"})
+                else:
+                    for peer in peers:
+                        try:
+                            await peer.send_json(forwarded)
+                        except Exception:
+                            SIGNALING_CLIENTS[target_id].discard(peer)
+            except (ValueError, json.JSONDecodeError, TypeError) as exc:
+                await websocket.send_json({"type": "error", "message": str(exc)})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        SIGNALING_CLIENTS[account_id].discard(websocket)
+        if not SIGNALING_CLIENTS[account_id]:
+            SIGNALING_CLIENTS.pop(account_id, None)
+
+
+@app.get("/api/accounts/notifications/transport")
+def account_notification_transport(device_id: str, account: dict = Depends(require_account)):
+    """Tell this signed-in device whether its account FCM token is registered and usable."""
+    with db() as con:
+        row = con.execute(
+            "SELECT 1 FROM account_devices WHERE account_id=? AND device_id=? AND fcm_token IS NOT NULL",
+            (account["account_id"], device_id),
+        ).fetchone()
+    return {"fcm_enabled": bool(init_firebase()) and row is not None, "fallback_polling": True}
+
+
+@app.get("/api/rooms/{room_code}/notifications/transport")
+def room_notification_transport(room_code: str, device_id: str):
+    """Tell this room/device whether a registered FCM destination can receive pushes."""
+    code = room_code.strip().upper()
+    if not ROOM_CODE_RE.fullmatch(code) or not room_exists(code):
+        raise HTTPException(status_code=404, detail="Room not found.")
+    with db() as con:
+        row = con.execute(
+            "SELECT 1 FROM devices WHERE room_code=? AND device_id=? AND fcm_token IS NOT NULL",
+            (code, device_id),
+        ).fetchone()
+    return {"fcm_enabled": bool(init_firebase()) and row is not None, "fallback_polling": True}
+
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "NorthStar Connect", "version": "0.5.7"}
+    return {"status": "ok", "service": "NorthStar Connect", "version": "0.6.0"}
 
 
 @app.post("/api/rooms", response_model=CreateRoomResponse)

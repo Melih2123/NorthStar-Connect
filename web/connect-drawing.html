@@ -122,6 +122,7 @@ button.danger{border-color:#9d4545;background:#351a20;color:#ffdfe2}
     </div>
     <div class="header-right">
       <div class="connection-pill"><span id="lamp" class="lamp"></span><span id="connection">BAĞLANTI YOK</span> · <b id="participants">0</b> kişi</div>
+      <a href="/friends.html" class="tool-btn" style="text-decoration:none">ARKADAŞLAR</a>
       <button id="chatToggle" class="tool-btn" aria-expanded="false">CHAT <span id="chatUnread"></span></button>
       <button id="fullscreen" class="tool-btn" title="Tam ekran">⛶ TAM EKRAN</button>
     </div>
@@ -202,8 +203,13 @@ button.danger{border-color:#9d4545;background:#351a20;color:#ffdfe2}
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
-if (location.protocol !== 'file:') $('server').value = location.origin;
-try { const saved=JSON.parse(localStorage.getItem('northstar-connect-last-room')||'{}'); if(saved.server) $('server').value=saved.server; if(saved.room) $('room').value=saved.room; } catch(_) {}
+const NORTHSTAR_DEFAULT_SERVER = 'https://melih-uzun.taild8cc3a.ts.net';
+const desktopBackend = (localStorage.getItem('northstar-connect-server-url') || '').trim();
+const isTauriDesktop = Boolean(window.__TAURI_INTERNALS__);
+if (desktopBackend) $('server').value = desktopBackend;
+else if (!isTauriDesktop && location.protocol !== 'file:') $('server').value = location.origin;
+else $('server').value = NORTHSTAR_DEFAULT_SERVER;
+try { const saved=JSON.parse(localStorage.getItem('northstar-connect-last-room')||'{}'); if(!desktopBackend && saved.server) $('server').value=saved.server; if(saved.room) $('room').value=saved.room; } catch(_) {}
 const canvas = $('board'), ctx = canvas.getContext('2d');
 function getStableClientId(){
   try{
@@ -220,6 +226,7 @@ let pendingChatImage=null,chatUnreadCount=0;
 const status=text=>$('status').textContent=text;
 const baseUrl=()=>$('server').value.trim().replace(/\/+$/,'');
 const roomCode=()=>$('room').value.trim().toUpperCase();
+window.addEventListener('message',event=>{if(event.source!==window.parent||event.data?.type!=='northstar-backend-changed'||typeof event.data.url!=='string')return;$('server').value=event.data.url;try{localStorage.setItem('northstar-connect-server-url',event.data.url);}catch(_){}if(roomCode())connect();else status('Sunucu adresi güncellendi.');});
 const setConnection=(state,text)=>{$('lamp').className='lamp '+state;$('connection').textContent=text;};
 function wsUrl(){const u=new URL(baseUrl());u.protocol=u.protocol==='https:'?'wss:':'ws:';u.pathname='/ws/rooms/'+encodeURIComponent(roomCode());u.searchParams.set('device_id',clientId);return u.toString();}
 function blank(){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.restore();}
@@ -324,7 +331,7 @@ function send(type,strokeId=null,payload={}){
 }
 function connect(){
   if(!baseUrl()||!roomCode()){status('Sunucu adresi ve oda kodu gerekli.');return;}
-  try{localStorage.setItem('northstar-connect-last-room',JSON.stringify({server:baseUrl(),room:roomCode()}));}catch(_){}
+  try{localStorage.setItem('northstar-connect-last-room',JSON.stringify({server:baseUrl(),room:roomCode()}));localStorage.setItem('northstar-connect-server-url',baseUrl());}catch(_){}
   if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
   if(socket){socket.onclose=null;socket.close();}
   setConnection('','BAĞLANIYOR');status('Ortak tuvale bağlanılıyor...');

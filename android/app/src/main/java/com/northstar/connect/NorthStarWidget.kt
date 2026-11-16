@@ -42,6 +42,8 @@ class NorthStarWidget : GlanceAppWidget() {
         }
         val roomCode = SyncConfig.roomCode(context)
         val roomLabel = if (roomCode.isNotBlank()) "SON ODA  •  $roomCode" else "HENÜZ ODA SEÇİLMEDİ"
+        val syncStatus = prefs.getString("widget_sync_status", null)
+            ?: if (roomCode.isBlank()) "Uygulamadan bir odaya katıl." else "Tuval senkronizasyonu bekleniyor."
 
         provideContent {
             Column(
@@ -77,11 +79,18 @@ class NorthStarWidget : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.height(4.dp))
                     Text(
-                        text = "Yeni resim eklendi",
+                        text = "ORTAK TUVAL",
                         style = TextStyle(
                             color = ColorProvider(R.color.northstar_white),
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp
+                        )
+                    )
+                    Text(
+                        text = syncStatus,
+                        style = TextStyle(
+                            color = ColorProvider(R.color.northstar_muted),
+                            fontSize = 9.sp
                         )
                     )
                 } else {
@@ -95,7 +104,7 @@ class NorthStarWidget : GlanceAppWidget() {
                     )
                     Spacer(modifier = GlanceModifier.height(6.dp))
                     Text(
-                        text = if (roomCode.isBlank()) "Uygulamadan bir odaya katıl." else "Oda tuvali yükleniyor. Açmak için dokun.",
+                        text = if (roomCode.isBlank()) "Uygulamadan bir odaya katıl." else syncStatus,
                         style = TextStyle(
                             color = ColorProvider(R.color.northstar_muted),
                             fontSize = 10.sp
@@ -109,4 +118,10 @@ class NorthStarWidget : GlanceAppWidget() {
 
 class NorthStarWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NorthStarWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        SyncScheduler.schedule(context)
+        SyncScheduler.refreshNow(context)
+    }
 }

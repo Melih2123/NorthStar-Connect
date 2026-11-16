@@ -1,0 +1,14 @@
+{
+  "name": "northstar-connect-windows",
+  "private": true,
+  "version": "0.6.1",
+  "description": "NorthStar Connect Windows desktop client",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

@@ -19,19 +19,33 @@ class NorthStarMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         val server = SyncConfig.serverUrl(this)
         val room = SyncConfig.roomCode(this)
-        if (server.isBlank() || room.isBlank()) return
+        val accountToken = IdentityStore.accessToken(this)
+        if (server.isBlank() || (room.isBlank() && accountToken.isNullOrBlank())) return
         Executors.newSingleThreadExecutor().execute {
-            runCatching { ApiClient.registerFcm(server, room, SyncConfig.deviceId(this), token) }
+            runCatching {
+                if (room.isNotBlank()) ApiClient.registerFcm(server, room, SyncConfig.deviceId(this), token)
+                if (!accountToken.isNullOrBlank()) ApiClient.registerAccountDevice(server, accountToken, SyncConfig.deviceId(this), token)
+            }
         }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        if (message.data["type"] != "board_updated" && message.data["type"] != "new_drawing" && message.data["type"] != "room_message") return
+        val type = message.data["type"] ?: return
+        if (type !in setOf("board_updated", "new_drawing", "room_message", "friend_request", "friend_accepted", "peer_invitation")) return
 
-        // Fetch the authoritative shared canvas snapshot and refresh the home-screen widget.
-        SyncScheduler.refreshNow(applicationContext)
+        // Canvas-related pushes refresh the home-screen preview. Social pushes do not.
+        if (type in setOf("board_updated", "new_drawing", "room_message")) {
+            SyncScheduler.refreshNow(applicationContext)
+        }
         createNotificationChannel()
+        val notificationText = when (type) {
+            "friend_request" -> "Yeni arkadaşlık isteğin var."
+            "friend_accepted" -> "Arkadaşlık isteğin kabul edildi."
+            "peer_invitation" -> "Bir arkadaşın bağlantı daveti gönderdi."
+            "room_message" -> "Yeni oda mesajın var."
+            else -> "Yeni resim eklendi"
+        }
 
         val openApp = PendingIntent.getActivity(
             this, 1001, Intent(this, MainActivity::class.java),
@@ -40,8 +54,8 @@ class NorthStarMessagingService : FirebaseMessagingService() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_gallery)
             .setContentTitle("NorthStar Connect")
-            .setContentText("Yeni resim eklendi")
-            .setStyle(NotificationCompat.BigTextStyle().bigText("Yeni resim eklendi"))
+            .setContentText(notificationText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notificationText))
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

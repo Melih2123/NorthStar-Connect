@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.6.1 - Windows desktop client groundwork
+
+- Added a Tauri 2 Windows desktop client that reuses the existing web canvas, Friends/account page and J.A.R.V.I.S. viewer.
+- Added desktop navigation and a persistent backend URL/health check.
+- Updated the drawing and Friends pages to use the configured backend URL, including the Friends signaling WebSocket.
+- Added a Windows GitHub Actions workflow to build and upload an NSIS installer and executable.
+- The client continues to use the existing server WebSocket for shared canvas/chat; the current WebRTC DataChannel remains a direct-connection test, not full canvas P2P.
+
+## 0.6.0 — Accounts, friends and P2P signaling
+- Added account registration/login with random stable Account IDs and Argon2id salted password hashes.
+- Android session tokens are encrypted locally with Android Keystore AES-GCM; server stores a SHA-256 token digest.
+- Added friends, incoming/outgoing friend requests, accepted relationships, direct/room invitations and persisted offline inbox.
+- Added account-scoped FCM device registration and notification polling based on the backend's actual FCM capability.
+- Added one-use signaling tickets and friend-only WebSocket signaling for WebRTC offer/answer/ICE exchange.
+- Added a browser-to-browser WebRTC DataChannel direct-message test on `/friends.html`, presence refresh and signaling keepalives.
+- Added a one-tap Android link to the browser P2P page.
+- Added an authenticated backend capability check so Android polling fallback is used when server-side FCM credentials are missing, even if Firebase SDK exists on the client.
+- Preserved registered FCM tokens when a device refreshes registration without sending a new token.
+- Added optional STUN/TURN configuration.
+- Android native account/friend/invite UI is included; native Android WebRTC DataChannel and P2P transfer of shared-canvas events remain future work. Existing room canvas/chat still use server WebSockets.
+- Fixed duplicate local variable in Android friend acceptance flow.
+- Added tests for notification transport status and FCM token preservation.
+
+# Changelog
+
+## 0.5.9
+- Refresh Glance immediately after a room is saved/joined and when the widget is added.
+- Decouple notification polling failures from canvas preview sync.
+- Always refresh the widget after successful canvas fetches.
+- Show sync status/errors directly inside the widget.
+- De-duplicate one-time refresh jobs.
+
+# Changelog
+
 ## 0.5.8
 - One installation counts as one room participant, even if duplicate sockets briefly exist.
 - Stale same-device WebSocket connections are replaced on reconnect.

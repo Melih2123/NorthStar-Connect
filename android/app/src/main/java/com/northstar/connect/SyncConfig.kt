@@ -44,5 +44,6 @@ object SyncConfig {
                 .remove("widget_event_id")
         }
         editor.apply()
+        WidgetUpdater.refresh(context.applicationContext)
     }
 }
